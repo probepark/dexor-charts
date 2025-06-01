@@ -1,5 +1,11 @@
 terraform {
   required_version = ">= 1.0"
+  
+  backend "gcs" {
+    bucket = "terraform-state-bucket-name"
+    prefix = "terraform/state"
+  }
+  
   required_providers {
     google = {
       source  = "hashicorp/google"
@@ -28,7 +34,10 @@ terraform {
   }
 }
 
-# Variables
+# ==============================================================================
+# VARIABLES
+# ==============================================================================
+
 variable "project_id" {
   description = "The GCP project ID"
   type        = string
@@ -94,7 +103,10 @@ variable "cert_manager_email" {
   type        = string
 }
 
-# Local values for environment-specific configurations
+# ==============================================================================
+# LOCAL VALUES
+# ==============================================================================
+
 locals {
   env_config = {
     dev = {
@@ -147,7 +159,10 @@ locals {
   }
 }
 
-# Providers
+# ==============================================================================
+# PROVIDERS
+# ==============================================================================
+
 provider "google" {
   project = var.project_id
   region  = var.region
@@ -172,7 +187,15 @@ provider "helm" {
   }
 }
 
+# ==============================================================================
+# DATA SOURCES
+# ==============================================================================
+
 data "google_client_config" "default" {}
+
+# ==============================================================================
+# RESOURCES
+# ==============================================================================
 
 # Random password for database
 resource "random_password" "db_password" {
@@ -864,7 +887,10 @@ resource "helm_release" "argocd_image_updater" {
   depends_on = [helm_release.argocd]
 }
 
-# Outputs
+# ==============================================================================
+# OUTPUTS
+# ==============================================================================
+
 output "cluster_name" {
   description = "GKE cluster name"
   value       = google_container_cluster.primary.name
