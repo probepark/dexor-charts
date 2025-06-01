@@ -1,11 +1,11 @@
 terraform {
   required_version = ">= 1.0"
-  
+
   backend "gcs" {
-    bucket = "terraform-state-bucket-name"
+    bucket = "dexor-terraform-state"
     prefix = "terraform/state"
   }
-  
+
   required_providers {
     google = {
       source  = "hashicorp/google"
@@ -150,7 +150,7 @@ locals {
       nginx_replicas       = 2
     }
   }
-  
+
   config = local.env_config[var.environment]
   common_labels = {
     environment = var.environment
@@ -216,17 +216,17 @@ resource "google_compute_subnetwork" "subnet" {
   ip_cidr_range = var.environment == "dev" ? "10.0.0.0/16" : "10.1.0.0/16"
   region        = var.region
   network       = google_compute_network.vpc.id
-  
+
   secondary_ip_range {
     range_name    = "pods"
     ip_cidr_range = var.environment == "dev" ? "10.4.0.0/14" : "10.8.0.0/14"
   }
-  
+
   secondary_ip_range {
     range_name    = "services"
     ip_cidr_range = var.environment == "dev" ? "10.12.0.0/16" : "10.13.0.0/16"
   }
-  
+
   private_ip_google_access = true
 }
 
@@ -286,7 +286,7 @@ resource "google_project_iam_member" "gke_sa_roles" {
     "roles/monitoring.viewer",
     "roles/stackdriver.resourceMetadata.writer"
   ])
-  
+
   project = var.project_id
   role    = each.value
   member  = "serviceAccount:${google_service_account.gke_sa.email}"
@@ -316,41 +316,41 @@ resource "google_service_account_iam_member" "external_dns_workload_identity" {
 resource "google_container_cluster" "primary" {
   name     = "${var.environment}-gke-cluster"
   location = var.region
-  
+
   # We can't create a cluster with no node pool defined, but we want to only use
   # separately managed node pools. So we create the smallest possible default
   # node pool and immediately delete it.
   remove_default_node_pool = true
   initial_node_count       = 1
-  
+
   network    = google_compute_network.vpc.name
   subnetwork = google_compute_subnetwork.subnet.name
-  
+
   # VPC-native networking
   ip_allocation_policy {
     cluster_secondary_range_name  = "pods"
     services_secondary_range_name = "services"
   }
-  
+
   # Workload Identity
   workload_identity_config {
     workload_pool = "${var.project_id}.svc.id.goog"
   }
-  
+
   # Private cluster configuration
   private_cluster_config {
     enable_private_nodes    = true
     enable_private_endpoint = false
     master_ipv4_cidr_block  = var.environment == "dev" ? "172.16.0.0/28" : "172.17.0.0/28"
   }
-  
+
   master_authorized_networks_config {
     cidr_blocks {
       cidr_block   = "0.0.0.0/0"
       display_name = "All"
     }
   }
-  
+
   # Enable various addons
   addons_config {
     http_load_balancing {
@@ -363,13 +363,13 @@ resource "google_container_cluster" "primary" {
       disabled = false
     }
   }
-  
+
   network_policy {
     enabled = true
   }
-  
+
   deletion_protection = var.environment == "prod" ? true : false
-  
+
   depends_on = [
     google_project_iam_member.gke_sa_roles,
   ]
@@ -420,7 +420,7 @@ resource "google_container_node_pool" "primary_nodes" {
     max_surge       = 1
     max_unavailable = 0
     strategy        = var.environment == "prod" ? "BLUE_GREEN" : "SURGE"
-    
+
     dynamic "blue_green_settings" {
       for_each = var.environment == "prod" ? [1] : []
       content {
@@ -441,7 +441,7 @@ resource "google_sql_database_instance" "mysql" {
   name             = "${var.environment}-mysql-instance"
   database_version = "MYSQL_8_0"
   region           = var.region
-  
+
   deletion_protection = var.environment == "prod" ? true : false
 
   settings {
@@ -450,7 +450,7 @@ resource "google_sql_database_instance" "mysql" {
     disk_size         = local.config.db_disk_size
     disk_type         = "PD_SSD"
     disk_autoresize   = true
-    
+
     backup_configuration {
       enabled                        = true
       start_time                     = "03:00"
@@ -460,27 +460,27 @@ resource "google_sql_database_instance" "mysql" {
       }
       transaction_log_retention_days = local.config.db_backup_days
     }
-    
+
     database_flags {
       name  = "general_log"
       value = "off"
     }
-    
+
     ip_configuration {
       ipv4_enabled    = false
       private_network = google_compute_network.vpc.id
       require_ssl     = var.environment == "prod" ? true : false
     }
-    
+
     maintenance_window {
       day          = 7
       hour         = 3
       update_track = var.environment == "prod" ? "stable" : "canary"
     }
-    
+
     user_labels = local.common_labels
   }
-  
+
   depends_on = [google_service_networking_connection.private_vpc_connection]
 }
 
@@ -506,22 +506,22 @@ resource "google_redis_instance" "redis" {
   tier           = local.config.redis_tier
   memory_size_gb = local.config.redis_memory_size
   region         = var.region
-  
+
   authorized_network = google_compute_network.vpc.id
-  
+
   auth_enabled   = local.config.redis_auth_enabled
   transit_encryption_mode = local.config.redis_tls_enabled ? "SERVER_AUTHENTICATION" : "DISABLED"
-  
+
   redis_version = "REDIS_7_0"
   display_name  = "${var.environment} Redis Instance"
-  
+
   redis_configs = var.environment == "prod" ? {
     maxmemory-policy = "allkeys-lru"
     save = "900 1 300 10 60 10000"
   } : {}
-  
+
   labels = local.common_labels
-  
+
   depends_on = [google_service_networking_connection.private_vpc_connection]
 }
 
@@ -586,7 +586,7 @@ resource "kubernetes_secret" "db_credentials" {
     name      = "mysql-credentials"
     namespace = "default"
   }
-  
+
   data = {
     host     = google_sql_database_instance.mysql[0].private_ip_address
     port     = "3306"
@@ -594,7 +594,7 @@ resource "kubernetes_secret" "db_credentials" {
     username = var.db_user
     password = random_password.db_password[0].result
   }
-  
+
   type = "Opaque"
   depends_on = [google_container_node_pool.primary_nodes]
 }
@@ -606,13 +606,13 @@ resource "kubernetes_secret" "redis_credentials" {
     name      = "redis-credentials"
     namespace = "default"
   }
-  
+
   data = {
     host = google_redis_instance.redis[0].host
     port = "6379"
     auth_string = local.config.redis_auth_enabled ? google_redis_instance.redis[0].auth_string : ""
   }
-  
+
   type = "Opaque"
   depends_on = [google_container_node_pool.primary_nodes]
 }
@@ -714,7 +714,7 @@ resource "null_resource" "cluster_issuer" {
       EOF
     EOT
   }
-  
+
   depends_on = [
     helm_release.cert_manager,
     google_container_node_pool.primary_nodes
