@@ -247,6 +247,22 @@ resource "google_service_networking_connection" "private_vpc_connection" {
   reserved_peering_ranges = [google_compute_global_address.private_service_access[0].name]
 }
 
+# Cloud Router for NAT
+resource "google_compute_router" "router" {
+  name    = "${var.environment}-router"
+  region  = var.region
+  network = google_compute_network.vpc.id
+}
+
+# Cloud NAT for egress traffic
+resource "google_compute_router_nat" "nat" {
+  name                               = "${var.environment}-nat"
+  router                             = google_compute_router.router.name
+  region                             = var.region
+  nat_ip_allocate_option             = "AUTO_ONLY"
+  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+}
+
 # Firewall rules
 resource "google_compute_firewall" "allow_internal" {
   name    = "${var.environment}-allow-internal"
@@ -469,7 +485,6 @@ resource "google_sql_database_instance" "mysql" {
     ip_configuration {
       ipv4_enabled    = false
       private_network = google_compute_network.vpc.id
-      require_ssl     = var.environment == "prod" ? true : false
     }
 
     maintenance_window {
