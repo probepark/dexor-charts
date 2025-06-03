@@ -110,14 +110,14 @@ variable "cert_manager_email" {
 locals {
   env_config = {
     dev = {
-      gke_node_count        = 2
+      gke_node_count        = 1
       gke_min_node_count    = 1
       gke_max_node_count    = 5
       gke_machine_type      = "e2-standard-2"
       gke_preemptible       = true
       gke_enable_autoupgrade = true
       argocd_replicas       = 1
-      cert_issuer_server    = "https://acme-staging-v02.api.letsencrypt.org/directory"
+      cert_issuer_server    = "https://acme-v02.api.letsencrypt.org/directory"
       external_dns_policy   = "upsert-only"
       db_tier              = "db-f1-micro"
       db_disk_size         = 20
@@ -808,17 +808,35 @@ resource "helm_release" "argocd" {
         annotations = {
           "cert-manager.io/cluster-issuer" = "letsencrypt-${var.environment}"
           "nginx.ingress.kubernetes.io/ssl-redirect" = "true"
-          "nginx.ingress.kubernetes.io/backend-protocol" = "GRPC"
+          "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
+          "nginx.ingress.kubernetes.io/backend-protocol" = "HTTP"
         }
         hosts = ["argocd-${var.environment}.${var.domain_suffix}"]
+        paths = ["/"]
+        pathType = "Prefix"
         tls = [{
           secretName = "argocd-server-tls"
           hosts      = ["argocd-${var.environment}.${var.domain_suffix}"]
         }]
       }
+      ingressGrpc = {
+        enabled = true
+        ingressClassName = "nginx"
+        annotations = {
+          "nginx.ingress.kubernetes.io/backend-protocol" = "GRPC"
+        }
+        hosts = ["argocd-grpc-${var.environment}.${var.domain_suffix}"]
+        paths = ["/"]
+        pathType = "Prefix"
+        tls = [{
+          secretName = "argocd-grpc-tls"
+          hosts      = ["argocd-grpc-${var.environment}.${var.domain_suffix}"]
+        }]
+      }
       config = {
         "application.instanceLabelKey" = "argocd.argoproj.io/instance"
       }
+      extraArgs = ["--insecure"]
     }
     repoServer = {
       replicas = local.config.argocd_replicas
