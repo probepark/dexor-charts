@@ -24,8 +24,15 @@ enable_redis        = true
 db_name = "app_database"
 db_user = "app_user"
 
+# GitHub Actions & Artifact Registry Configuration (optional)
+enable_workload_identity  = true                           # Recommended for security
+create_github_sa_key      = false                          # Use Workload Identity instead
+enable_github_gke_access  = true                           # Usually needed for prod deployments
+github_repository         = "kaiachain/dexor-charts"       # Replace with your repo
+
 # Example values for a production environment:
 # project_id = "my-company-prod-789012"
 # domain_suffix = "mycompany.com"
 # dns_zone_name = "mycompany-com"
 # cert_manager_email = "devops@mycompany.com"
+# github_repository = "mycompany/myproject"
