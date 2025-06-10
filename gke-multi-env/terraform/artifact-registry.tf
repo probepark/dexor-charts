@@ -2,6 +2,12 @@
 # ARTIFACT REGISTRY
 # ==============================================================================
 
+# Local values for GitHub repository configuration
+locals {
+  # Extract unique repository owners from the list of repositories
+  repository_owners = distinct([for repo in var.github_repositories : split("/", repo)[0]])
+}
+
 resource "google_project_service" "artifact_registry_api" {
   service = "artifactregistry.googleapis.com"
   disable_on_destroy = false
@@ -125,20 +131,21 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
     "attribute.repository_id"       = "assertion.repository_id"
   }
 
-  attribute_condition = "assertion.repository_owner == '${split("/", var.github_repository)[0]}'"
+  # Support multiple repositories by checking repository owner against all configured repositories
+  attribute_condition = "assertion.repository_owner in ${jsonencode(local.repository_owners)}"
 
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
   }
 }
 
-# IAM binding for Workload Identity
+# IAM binding for Workload Identity - support multiple repositories
 resource "google_service_account_iam_binding" "github_workload_identity_binding" {
   count              = var.enable_workload_identity ? 1 : 0
   service_account_id = google_service_account.github_actions_sa.name
   role               = "roles/iam.workloadIdentityUser"
 
   members = [
-    "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool[0].name}/attribute.repository/${var.github_repository}"
+    for repo in var.github_repositories : "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool[0].name}/attribute.repository/${repo}"
   ]
 }

@@ -85,6 +85,19 @@ Both dev and prod terraform.tfvars files require:
 - `dns_zone_name`: Cloud DNS zone name
 - `cert_manager_email`: Email for Let's Encrypt certificates
 
+### GitHub Repository Configuration
+Configure multiple repositories for GitHub Actions integration:
+
+```hcl
+github_repositories = [
+  "kaiachain/dexor-charts",
+  "kaiachain/another-repo",
+  "kaiachain/third-repo"
+]
+```
+
+**Note**: At least one repository must be specified for GitHub Actions integration to work.
+
 ### Safety Mechanisms
 - **Terraform Workspaces**: Automatic workspace management per environment
 - **Production Confirmations**: Multiple confirmation prompts for prod operations

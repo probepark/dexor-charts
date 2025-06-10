@@ -14,7 +14,13 @@ The infrastructure includes:
 
 1. Deploy the infrastructure with Artifact Registry resources:
    ```bash
-   # Update terraform.tfvars with GitHub repository name
+   # Update terraform.tfvars with GitHub repository configuration
+   github_repositories = [
+     "kaiachain/dexor-charts",
+     "kaiachain/another-repo",
+     "kaiachain/third-repo"
+   ]
+   
    make apply-dev  # or make apply-prod
    ```
 

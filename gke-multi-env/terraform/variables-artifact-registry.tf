@@ -20,14 +20,19 @@ variable "enable_workload_identity" {
   default     = true
 }
 
-variable "github_repository" {
-  description = "GitHub repository name (e.g., 'kaiachain/dexor-charts')"
-  type        = string
-  default     = ""
+variable "github_repositories" {
+  description = "List of GitHub repository names (e.g., ['kaiachain/dexor-charts', 'kaiachain/other-repo'])"
+  type        = list(string)
+  default     = []
   
   validation {
-    condition     = can(regex("^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$", var.github_repository)) || var.github_repository == ""
-    error_message = "GitHub repository must be in format 'owner/repo' or empty string."
+    condition     = length(var.github_repositories) > 0
+    error_message = "At least one GitHub repository must be specified."
+  }
+  
+  validation {
+    condition     = alltrue([for repo in var.github_repositories : can(regex("^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$", repo))])
+    error_message = "All GitHub repositories must be in format 'owner/repo'."
   }
 }
 
