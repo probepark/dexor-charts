@@ -9,6 +9,7 @@
 .PHONY: logs-dev logs-prod clean-dev clean-prod dev-workflow prod-workflow
 .PHONY: validate-dev validate-prod check-requirements
 .PHONY: secrets-list-dev secrets-list-prod secrets-get-dev secrets-get-prod app-config-dev app-config-prod
+.PHONY: k8s-db-proxy-dev k8s-db-proxy-prod k8s-db-deploy-dev k8s-db-deploy-prod k8s-db-delete-dev k8s-db-delete-prod
 
 # Default environment
 ENV ?= dev
@@ -348,3 +349,28 @@ app-config-prod: ## Get application configuration JSON from Secret Manager for p
 	$(call log_info,"Getting application configuration for prod environment...")
 	@cd terraform && terraform workspace select prod && \
 	terraform output -raw app_config_secret_command | bash
+
+# Kubernetes Cloud SQL Proxy commands
+k8s-db-proxy-dev: kubectl-dev ## Connect to dev database via Kubernetes Cloud SQL Proxy (port 3306)
+	$(call log_info,"Connecting to dev database via Kubernetes...")
+	@./scripts/k8s-cloud-sql-proxy.sh dev 3306 connect
+
+k8s-db-proxy-prod: kubectl-prod ## Connect to prod database via Kubernetes Cloud SQL Proxy (port 3307)
+	$(call log_info,"Connecting to prod database via Kubernetes...")
+	@./scripts/k8s-cloud-sql-proxy.sh prod 3307 connect
+
+k8s-db-deploy-dev: kubectl-dev ## Deploy Cloud SQL Proxy to dev Kubernetes cluster
+	$(call log_info,"Deploying Cloud SQL Proxy to dev cluster...")
+	@./scripts/k8s-cloud-sql-proxy.sh dev 3306 deploy
+
+k8s-db-deploy-prod: kubectl-prod ## Deploy Cloud SQL Proxy to prod Kubernetes cluster
+	$(call log_info,"Deploying Cloud SQL Proxy to prod cluster...")
+	@./scripts/k8s-cloud-sql-proxy.sh prod 3307 deploy
+
+k8s-db-delete-dev: kubectl-dev ## Delete Cloud SQL Proxy from dev Kubernetes cluster
+	$(call log_info,"Deleting Cloud SQL Proxy from dev cluster...")
+	@./scripts/k8s-cloud-sql-proxy.sh dev 3306 delete
+
+k8s-db-delete-prod: kubectl-prod ## Delete Cloud SQL Proxy from prod Kubernetes cluster
+	$(call log_info,"Deleting Cloud SQL Proxy from prod cluster...")
+	@./scripts/k8s-cloud-sql-proxy.sh prod 3307 delete
