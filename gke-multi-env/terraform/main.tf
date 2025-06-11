@@ -110,44 +110,44 @@ variable "cert_manager_email" {
 locals {
   env_config = {
     dev = {
-      gke_node_count        = 1
-      gke_min_node_count    = 1
-      gke_max_node_count    = 5
-      gke_machine_type      = "e2-standard-2"
-      gke_preemptible       = true
+      gke_node_count         = 1
+      gke_min_node_count     = 1
+      gke_max_node_count     = 5
+      gke_machine_type       = "e2-standard-2"
+      gke_preemptible        = true
       gke_enable_autoupgrade = true
-      argocd_replicas       = 1
-      cert_issuer_server    = "https://acme-v02.api.letsencrypt.org/directory"
-      external_dns_policy   = "upsert-only"
-      db_tier              = "db-f1-micro"
-      db_disk_size         = 20
-      db_availability_type = "ZONAL"
-      db_backup_days       = 7
-      redis_tier           = "BASIC"
-      redis_memory_size    = 1
-      redis_auth_enabled   = false
-      redis_tls_enabled    = false
-      nginx_replicas       = 1
+      argocd_replicas        = 1
+      cert_issuer_server     = "https://acme-v02.api.letsencrypt.org/directory"
+      external_dns_policy    = "upsert-only"
+      db_tier                = "db-f1-micro"
+      db_disk_size           = 20
+      db_availability_type   = "ZONAL"
+      db_backup_days         = 7
+      redis_tier             = "BASIC"
+      redis_memory_size      = 1
+      redis_auth_enabled     = false
+      redis_tls_enabled      = false
+      nginx_replicas         = 1
     }
     prod = {
-      gke_node_count        = 3
-      gke_min_node_count    = 3
-      gke_max_node_count    = 10
-      gke_machine_type      = "e2-standard-4"
-      gke_preemptible       = false
+      gke_node_count         = 3
+      gke_min_node_count     = 3
+      gke_max_node_count     = 10
+      gke_machine_type       = "e2-standard-4"
+      gke_preemptible        = false
       gke_enable_autoupgrade = false
-      argocd_replicas       = 3
-      cert_issuer_server    = "https://acme-v02.api.letsencrypt.org/directory"
-      external_dns_policy   = "sync"
-      db_tier              = "db-n1-standard-2"
-      db_disk_size         = 100
-      db_availability_type = "REGIONAL"
-      db_backup_days       = 30
-      redis_tier           = "STANDARD_HA"
-      redis_memory_size    = 5
-      redis_auth_enabled   = true
-      redis_tls_enabled    = true
-      nginx_replicas       = 2
+      argocd_replicas        = 3
+      cert_issuer_server     = "https://acme-v02.api.letsencrypt.org/directory"
+      external_dns_policy    = "sync"
+      db_tier                = "db-n1-standard-2"
+      db_disk_size           = 100
+      db_availability_type   = "REGIONAL"
+      db_backup_days         = 30
+      redis_tier             = "STANDARD_HA"
+      redis_memory_size      = 5
+      redis_auth_enabled     = true
+      redis_tls_enabled      = true
+      nginx_replicas         = 2
     }
   }
 
@@ -468,9 +468,9 @@ resource "google_sql_database_instance" "mysql" {
     disk_autoresize   = true
 
     backup_configuration {
-      enabled                        = true
-      start_time                     = "03:00"
-      binary_log_enabled            = true
+      enabled            = true
+      start_time         = "03:00"
+      binary_log_enabled = true
       backup_retention_settings {
         retained_backups = local.config.db_backup_days
       }
@@ -524,7 +524,7 @@ resource "google_redis_instance" "redis" {
 
   authorized_network = google_compute_network.vpc.id
 
-  auth_enabled   = local.config.redis_auth_enabled
+  auth_enabled            = local.config.redis_auth_enabled
   transit_encryption_mode = local.config.redis_tls_enabled ? "SERVER_AUTHENTICATION" : "DISABLED"
 
   redis_version = "REDIS_7_0"
@@ -532,7 +532,7 @@ resource "google_redis_instance" "redis" {
 
   redis_configs = var.environment == "prod" ? {
     maxmemory-policy = "allkeys-lru"
-    save = "900 1 300 10 60 10000"
+    save             = "900 1 300 10 60 10000"
   } : {}
 
   labels = local.common_labels
@@ -610,7 +610,7 @@ resource "kubernetes_secret" "db_credentials" {
     password = random_password.db_password[0].result
   }
 
-  type = "Opaque"
+  type       = "Opaque"
   depends_on = [google_container_node_pool.primary_nodes]
 }
 
@@ -623,12 +623,12 @@ resource "kubernetes_secret" "redis_credentials" {
   }
 
   data = {
-    host = google_redis_instance.redis[0].host
-    port = "6379"
+    host        = google_redis_instance.redis[0].host
+    port        = "6379"
     auth_string = local.config.redis_auth_enabled ? google_redis_instance.redis[0].auth_string : ""
   }
 
-  type = "Opaque"
+  type       = "Opaque"
   depends_on = [google_container_node_pool.primary_nodes]
 }
 
@@ -676,7 +676,7 @@ resource "helm_release" "cert_manager" {
   create_namespace = false
 
   values = [yamlencode({
-    installCRDs = true
+    installCRDs  = true
     nodeSelector = var.environment == "prod" ? { environment = "prod" } : {}
     tolerations = var.environment == "prod" ? [{
       key      = "environment"
@@ -784,7 +784,7 @@ resource "helm_release" "argocd" {
 
   values = [yamlencode({
     controller = {
-      replicas = local.config.argocd_replicas
+      replicas     = local.config.argocd_replicas
       nodeSelector = var.environment == "prod" ? { environment = "prod" } : {}
       tolerations = var.environment == "prod" ? [{
         key      = "environment"
@@ -794,7 +794,7 @@ resource "helm_release" "argocd" {
       }] : []
     }
     server = {
-      replicas = local.config.argocd_replicas
+      replicas     = local.config.argocd_replicas
       nodeSelector = var.environment == "prod" ? { environment = "prod" } : {}
       tolerations = var.environment == "prod" ? [{
         key      = "environment"
@@ -803,16 +803,16 @@ resource "helm_release" "argocd" {
         effect   = "NoSchedule"
       }] : []
       ingress = {
-        enabled = true
+        enabled          = true
         ingressClassName = "nginx"
         annotations = {
-          "cert-manager.io/cluster-issuer" = "letsencrypt-${var.environment}"
-          "nginx.ingress.kubernetes.io/ssl-redirect" = "true"
+          "cert-manager.io/cluster-issuer"                 = "letsencrypt-${var.environment}"
+          "nginx.ingress.kubernetes.io/ssl-redirect"       = "true"
           "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
-          "nginx.ingress.kubernetes.io/backend-protocol" = "HTTP"
+          "nginx.ingress.kubernetes.io/backend-protocol"   = "HTTP"
         }
-        hosts = ["argocd-${var.environment}.${var.domain_suffix}"]
-        paths = ["/"]
+        hosts    = ["argocd-${var.environment}.${var.domain_suffix}"]
+        paths    = ["/"]
         pathType = "Prefix"
         tls = [{
           secretName = "argocd-server-tls"
@@ -820,13 +820,13 @@ resource "helm_release" "argocd" {
         }]
       }
       ingressGrpc = {
-        enabled = true
+        enabled          = true
         ingressClassName = "nginx"
         annotations = {
           "nginx.ingress.kubernetes.io/backend-protocol" = "GRPC"
         }
-        hosts = ["argocd-grpc-${var.environment}.${var.domain_suffix}"]
-        paths = ["/"]
+        hosts    = ["argocd-grpc-${var.environment}.${var.domain_suffix}"]
+        paths    = ["/"]
         pathType = "Prefix"
         tls = [{
           secretName = "argocd-grpc-tls"
@@ -839,7 +839,7 @@ resource "helm_release" "argocd" {
       extraArgs = ["--insecure"]
     }
     repoServer = {
-      replicas = local.config.argocd_replicas
+      replicas     = local.config.argocd_replicas
       nodeSelector = var.environment == "prod" ? { environment = "prod" } : {}
       tolerations = var.environment == "prod" ? [{
         key      = "environment"
@@ -849,7 +849,7 @@ resource "helm_release" "argocd" {
       }] : []
     }
     applicationSet = {
-      replicas = local.config.argocd_replicas
+      replicas     = local.config.argocd_replicas
       nodeSelector = var.environment == "prod" ? { environment = "prod" } : {}
       tolerations = var.environment == "prod" ? [{
         key      = "environment"
@@ -859,7 +859,7 @@ resource "helm_release" "argocd" {
       }] : []
     }
     notifications = {
-      enabled = var.environment == "prod"
+      enabled      = var.environment == "prod"
       nodeSelector = var.environment == "prod" ? { environment = "prod" } : {}
       tolerations = var.environment == "prod" ? [{
         key      = "environment"
@@ -869,7 +869,7 @@ resource "helm_release" "argocd" {
       }] : []
     }
     redis = {
-      enabled = true
+      enabled      = true
       nodeSelector = var.environment == "prod" ? { environment = "prod" } : {}
       tolerations = var.environment == "prod" ? [{
         key      = "environment"

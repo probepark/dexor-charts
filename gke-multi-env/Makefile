@@ -8,6 +8,7 @@
 .PHONY: dns-records-dev dns-records-prod ingress-ip-dev ingress-ip-prod
 .PHONY: logs-dev logs-prod clean-dev clean-prod dev-workflow prod-workflow
 .PHONY: validate-dev validate-prod check-requirements
+.PHONY: secrets-list-dev secrets-list-prod secrets-get-dev secrets-get-prod app-config-dev app-config-prod
 
 # Default environment
 ENV ?= dev
@@ -304,3 +305,46 @@ destroy: ## Destroy specified environment (ENV=dev|prod)
 
 status: ## Show status for specified environment (ENV=dev|prod)
 	@if [ "$(ENV)" = "dev" ]; then $(MAKE) status-dev; elif [ "$(ENV)" = "prod" ]; then $(MAKE) status-prod; else $(call log_error,"Invalid ENV value. Use ENV=dev or ENV=prod"); exit 1; fi
+
+# Secret Manager commands
+secrets-list-dev: ## List all secrets in Secret Manager for dev environment
+	$(call log_info,"Listing Secret Manager secrets for dev environment...")
+	@cd terraform && terraform workspace select dev && \
+	PROJECT_ID=$$(terraform output -raw cluster_name | sed 's/-gke-cluster//') && \
+	gcloud secrets list --project=$$PROJECT_ID --filter="labels.environment=dev" --format="table(name,labels.type:label=TYPE,createTime:label=CREATED)"
+
+secrets-list-prod: ## List all secrets in Secret Manager for prod environment
+	$(call log_info,"Listing Secret Manager secrets for prod environment...")
+	@cd terraform && terraform workspace select prod && \
+	PROJECT_ID=$$(terraform output -raw cluster_name | sed 's/-gke-cluster//') && \
+	gcloud secrets list --project=$$PROJECT_ID --filter="labels.environment=prod" --format="table(name,labels.type:label=TYPE,createTime:label=CREATED)"
+
+secrets-get-dev: ## Get a secret value from Secret Manager for dev (usage: make secrets-get-dev SECRET=secret-name)
+	@if [ -z "$(SECRET)" ]; then \
+		$(call log_error,"SECRET parameter is required. Usage: make secrets-get-dev SECRET=secret-name"); \
+		exit 1; \
+	fi
+	$(call log_info,"Getting secret '$(SECRET)' from dev environment...")
+	@cd terraform && terraform workspace select dev && \
+	PROJECT_ID=$$(terraform output -raw cluster_name | sed 's/-gke-cluster//') && \
+	gcloud secrets versions access latest --secret="dev-$(SECRET)" --project=$$PROJECT_ID
+
+secrets-get-prod: ## Get a secret value from Secret Manager for prod (usage: make secrets-get-prod SECRET=secret-name)
+	@if [ -z "$(SECRET)" ]; then \
+		$(call log_error,"SECRET parameter is required. Usage: make secrets-get-prod SECRET=secret-name"); \
+		exit 1; \
+	fi
+	$(call log_info,"Getting secret '$(SECRET)' from prod environment...")
+	@cd terraform && terraform workspace select prod && \
+	PROJECT_ID=$$(terraform output -raw cluster_name | sed 's/-gke-cluster//') && \
+	gcloud secrets versions access latest --secret="prod-$(SECRET)" --project=$$PROJECT_ID
+
+app-config-dev: ## Get application configuration JSON from Secret Manager for dev environment
+	$(call log_info,"Getting application configuration for dev environment...")
+	@cd terraform && terraform workspace select dev && \
+	terraform output -raw app_config_secret_command | bash
+
+app-config-prod: ## Get application configuration JSON from Secret Manager for prod environment
+	$(call log_info,"Getting application configuration for prod environment...")
+	@cd terraform && terraform workspace select prod && \
+	terraform output -raw app_config_secret_command | bash

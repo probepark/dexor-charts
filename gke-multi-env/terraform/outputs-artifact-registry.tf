@@ -41,7 +41,7 @@ output "github_actions_docker_login_command" {
 output "github_actions_push_example" {
   description = "Example Docker push commands for GitHub Actions"
   value = {
-    tag   = "docker tag my-app:latest ${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.docker_registry.repository_id}/my-app:latest"
-    push  = "docker push ${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.docker_registry.repository_id}/my-app:latest"
+    tag  = "docker tag my-app:latest ${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.docker_registry.repository_id}/my-app:latest"
+    push = "docker push ${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.docker_registry.repository_id}/my-app:latest"
   }
 }

@@ -9,7 +9,7 @@ locals {
 }
 
 resource "google_project_service" "artifact_registry_api" {
-  service = "artifactregistry.googleapis.com"
+  service            = "artifactregistry.googleapis.com"
   disable_on_destroy = false
 }
 
@@ -28,7 +28,7 @@ resource "google_artifact_registry_repository" "docker_registry" {
     id     = "keep-tagged-versions"
     action = "KEEP"
     condition {
-      tag_state    = "TAGGED"
+      tag_state = "TAGGED"
     }
   }
 
@@ -55,7 +55,7 @@ resource "google_artifact_registry_repository" "helm_registry" {
     id     = "keep-tagged-versions"
     action = "KEEP"
     condition {
-      tag_state    = "TAGGED"
+      tag_state = "TAGGED"
     }
   }
 
@@ -124,11 +124,11 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
   project                            = var.project_id
 
   attribute_mapping = {
-    "google.subject"                = "assertion.sub"
-    "attribute.actor"               = "assertion.actor"
-    "attribute.repository"          = "assertion.repository"
-    "attribute.repository_owner"    = "assertion.repository_owner"
-    "attribute.repository_id"       = "assertion.repository_id"
+    "google.subject"             = "assertion.sub"
+    "attribute.actor"            = "assertion.actor"
+    "attribute.repository"       = "assertion.repository"
+    "attribute.repository_owner" = "assertion.repository_owner"
+    "attribute.repository_id"    = "assertion.repository_id"
   }
 
   # Support multiple repositories by checking repository owner against all configured repositories
