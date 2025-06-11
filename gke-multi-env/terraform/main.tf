@@ -455,7 +455,7 @@ resource "google_container_node_pool" "primary_nodes" {
 resource "google_sql_database_instance" "mysql" {
   count            = var.enable_cloud_sql ? 1 : 0
   name             = "${var.environment}-mysql-instance"
-  database_version = "MYSQL_8_0"
+  database_version = "MYSQL_8_4"
   region           = var.region
 
   deletion_protection = var.environment == "prod" ? true : false
