@@ -1,0 +1,27 @@
+{{- if and .Values.api.enabled .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "kaia-orderbook-dex-backend.fullname" . }}-api
+  labels:
+    {{- include "kaia-orderbook-dex-backend.api.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "kaia-orderbook-dex-backend.api.selectorLabels" . | nindent 6 }}
+{{- end }}
+{{- if and .Values.event.enabled .Values.podDisruptionBudget.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "kaia-orderbook-dex-backend.fullname" . }}-event
+  labels:
+    {{- include "kaia-orderbook-dex-backend.event.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "kaia-orderbook-dex-backend.event.selectorLabels" . | nindent 6 }}
+{{- end }}

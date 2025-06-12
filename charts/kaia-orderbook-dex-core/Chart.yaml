@@ -1,0 +1,19 @@
+apiVersion: v2
+name: kaia-orderbook-dex-core
+description: A Helm chart for Kaia Orderbook DEX Core (Nitro Node)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - kaia
+  - dex
+  - orderbook
+  - arbitrum
+  - nitro
+  - layer2
+home: https://github.com/kaiachain/kaia-orderbook-dex-core
+sources:
+  - https://github.com/kaiachain/kaia-orderbook-dex-core
+maintainers:
+  - name: Kaia Team
+    email: dev@kaia.io

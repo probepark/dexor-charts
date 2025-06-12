@@ -1,0 +1,37 @@
+{{- if .Values.nitroNode.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kaia-orderbook-dex-core.fullname" . }}-nitro
+  labels:
+    {{- include "kaia-orderbook-dex-core.nitroNode.labels" . | nindent 4 }}
+  {{- with .Values.nitroNode.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.nitroNode.service.type }}
+  ports:
+    - port: {{ .Values.nitroNode.service.httpPort }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: {{ .Values.nitroNode.service.wsPort }}
+      targetPort: ws
+      protocol: TCP
+      name: ws
+    {{- if .Values.nitroConfig.feed.output.enable }}
+    - port: {{ .Values.nitroNode.service.feedPort }}
+      targetPort: feed
+      protocol: TCP
+      name: feed
+    {{- end }}
+    {{- if .Values.monitoring.enabled }}
+    - port: {{ .Values.monitoring.prometheus.port }}
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+    {{- end }}
+  selector:
+    {{- include "kaia-orderbook-dex-core.nitroNode.selectorLabels" . | nindent 4 }}
+{{- end }}

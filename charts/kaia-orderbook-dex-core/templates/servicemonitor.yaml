@@ -1,0 +1,43 @@
+{{- if and .Values.monitoring.enabled .Values.monitoring.serviceMonitor.enabled }}
+{{- if .Values.nitroNode.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "kaia-orderbook-dex-core.fullname" . }}-nitro
+  {{- if .Values.monitoring.serviceMonitor.namespace }}
+  namespace: {{ .Values.monitoring.serviceMonitor.namespace }}
+  {{- end }}
+  labels:
+    {{- include "kaia-orderbook-dex-core.nitroNode.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "kaia-orderbook-dex-core.nitroNode.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: metrics
+      interval: {{ .Values.monitoring.serviceMonitor.interval }}
+      scrapeTimeout: {{ .Values.monitoring.serviceMonitor.scrapeTimeout }}
+      path: {{ .Values.monitoring.prometheus.path }}
+{{- end }}
+{{- if .Values.validator.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "kaia-orderbook-dex-core.fullname" . }}-validator
+  {{- if .Values.monitoring.serviceMonitor.namespace }}
+  namespace: {{ .Values.monitoring.serviceMonitor.namespace }}
+  {{- end }}
+  labels:
+    {{- include "kaia-orderbook-dex-core.validator.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "kaia-orderbook-dex-core.validator.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: metrics
+      interval: {{ .Values.monitoring.serviceMonitor.interval }}
+      scrapeTimeout: {{ .Values.monitoring.serviceMonitor.scrapeTimeout }}
+      path: {{ .Values.monitoring.prometheus.path }}
+{{- end }}
+{{- end }}

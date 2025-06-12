@@ -1,0 +1,143 @@
+{{- if .Values.nitroNode.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "kaia-orderbook-dex-core.fullname" . }}-nitro
+  labels:
+    {{- include "kaia-orderbook-dex-core.nitroNode.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "kaia-orderbook-dex-core.fullname" . }}-nitro
+  replicas: {{ .Values.nitroNode.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kaia-orderbook-dex-core.nitroNode.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kaia-orderbook-dex-core.nitroNode.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "kaia-orderbook-dex-core.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: nitro-node
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "kaia-orderbook-dex-core.nitroNode.image" . }}
+          imagePullPolicy: {{ .Values.nitroNode.image.pullPolicy }}
+          command: ["/usr/local/bin/nitro"]
+          args:
+            {{- toYaml .Values.nitroNode.args | nindent 12 }}
+            {{- if .Values.nitroConfig.archiveMode }}
+            - "--node.archive"
+            {{- end }}
+            {{- if .Values.sequencer.enabled }}
+            - "--node.sequencer"
+            - "--sequencer.enable"
+            {{- if .Values.sequencer.redis.enabled }}
+            - "--node.seq-coordinator.enable"
+            - "--node.seq-coordinator.redis-url={{ .Values.sequencer.redis.url }}"
+            {{- end }}
+            {{- if .Values.sequencer.batchPoster.enabled }}
+            - "--node.batch-poster.enable"
+            - "--node.batch-poster.max-delay={{ .Values.sequencer.batchPoster.maxDelay }}"
+            - "--node.batch-poster.compression-level={{ .Values.sequencer.batchPoster.compressionLevel }}"
+            {{- end }}
+            {{- end }}
+            {{- if .Values.nitroConfig.orderbook.enabled }}
+            - "--orderbook.enable"
+            - "--orderbook.gas-limit={{ .Values.nitroConfig.orderbook.gasLimit }}"
+            {{- end }}
+            {{- if .Values.timeboost.enabled }}
+            - "--timeboost.enable"
+            {{- if .Values.timeboost.auctioneer.enabled }}
+            - "--timeboost.auctioneer-redis-url={{ .Values.timeboost.auctioneer.redisUrl }}"
+            {{- end }}
+            {{- end }}
+            {{- if .Values.nitroConfig.feed.output.enable }}
+            - "--feed.output.enable"
+            - "--feed.output.port={{ .Values.nitroConfig.feed.output.port }}"
+            {{- end }}
+            {{- if .Values.nitroConfig.dangerous.noL1Listener }}
+            - "--node.dangerous.no-l1-listener"
+            {{- end }}
+            - "--persistent.chain=/data/chain"
+            - "--persistent.global-config=/data/config"
+          env:
+            - name: NITRO_PHASE
+              value: {{ .Values.environment.phase | quote }}
+            {{- if .Values.environment.contracts.rollup }}
+            - name: ROLLUP_ADDRESS
+              value: {{ .Values.environment.contracts.rollup | quote }}
+            {{- end }}
+            {{- if .Values.environment.contracts.sequencerInbox }}
+            - name: SEQUENCER_INBOX_ADDRESS
+              value: {{ .Values.environment.contracts.sequencerInbox | quote }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.nitroNode.service.httpPort }}
+              protocol: TCP
+            - name: ws
+              containerPort: {{ .Values.nitroNode.service.wsPort }}
+              protocol: TCP
+            {{- if .Values.nitroConfig.feed.output.enable }}
+            - name: feed
+              containerPort: {{ .Values.nitroNode.service.feedPort }}
+              protocol: TCP
+            {{- end }}
+            {{- if .Values.monitoring.enabled }}
+            - name: metrics
+              containerPort: {{ .Values.monitoring.prometheus.port }}
+              protocol: TCP
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.nitroNode.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      {{- with .Values.nitroNode.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nitroNode.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nitroNode.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  {{- if .Values.nitroNode.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        {{- with .Values.nitroNode.persistence.annotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes:
+          - {{ .Values.nitroNode.persistence.accessMode }}
+        storageClassName: {{ include "kaia-orderbook-dex-core.storageClass" . }}
+        resources:
+          requests:
+            storage: {{ .Values.nitroNode.persistence.size }}
+  {{- end }}
+{{- end }}

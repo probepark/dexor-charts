@@ -1,0 +1,27 @@
+{{- if and .Values.nitroNode.enabled .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "kaia-orderbook-dex-core.fullname" . }}-nitro
+  labels:
+    {{- include "kaia-orderbook-dex-core.nitroNode.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "kaia-orderbook-dex-core.nitroNode.selectorLabels" . | nindent 6 }}
+{{- end }}
+{{- if and .Values.validator.enabled .Values.podDisruptionBudget.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "kaia-orderbook-dex-core.fullname" . }}-validator
+  labels:
+    {{- include "kaia-orderbook-dex-core.validator.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "kaia-orderbook-dex-core.validator.selectorLabels" . | nindent 6 }}
+{{- end }}

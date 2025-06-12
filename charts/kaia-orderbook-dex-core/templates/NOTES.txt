@@ -1,0 +1,56 @@
+1. Get the application URL by running these commands:
+{{- if and .Values.nitroNode.enabled .Values.nitroNode.ingress.enabled }}
+{{- range $host := .Values.nitroNode.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.nitroNode.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if .Values.nitroNode.enabled }}
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "kaia-orderbook-dex-core.name" . }},app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/component=nitro-node" -o jsonpath="{.items[0].metadata.name}")
+  echo "Visit http://127.0.0.1:8547 to use JSON-RPC"
+  echo "Visit http://127.0.0.1:8548 to use WebSocket"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8547:{{ .Values.nitroNode.service.httpPort }} 8548:{{ .Values.nitroNode.service.wsPort }}
+{{- end }}
+
+2. Check the deployment status:
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+3. Check logs:
+  {{- if .Values.nitroNode.enabled }}
+  kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/component=nitro-node
+  {{- end }}
+  {{- if .Values.validator.enabled }}
+  kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/component=validator
+  {{- end }}
+
+4. Configuration:
+  - Environment: {{ .Values.environment.phase }}
+  - Chain ID: {{ .Values.environment.childChain.chainId }}
+  - Parent Chain: {{ .Values.environment.parentChain.rpcUrl }}
+  {{- if .Values.sequencer.enabled }}
+  - Sequencer: Enabled
+  {{- if .Values.sequencer.redis.enabled }}
+  - Redis URL: {{ .Values.sequencer.redis.url }}
+  {{- end }}
+  {{- end }}
+
+5. Services deployed:
+  {{- if .Values.nitroNode.enabled }}
+  - Nitro Node RPC: {{ include "kaia-orderbook-dex-core.fullname" . }}-nitro
+    - HTTP Port: {{ .Values.nitroNode.service.httpPort }}
+    - WebSocket Port: {{ .Values.nitroNode.service.wsPort }}
+    {{- if .Values.nitroConfig.feed.output.enable }}
+    - Feed Port: {{ .Values.nitroNode.service.feedPort }}
+    {{- end }}
+  {{- end }}
+  {{- if .Values.validator.enabled }}
+  - Validator: {{ include "kaia-orderbook-dex-core.fullname" . }}-validator (Port: {{ .Values.validator.service.port }})
+  {{- end }}
+
+{{- if .Values.nitroConfig.orderbook.enabled }}
+6. Orderbook DEX is enabled with gas limit: {{ .Values.nitroConfig.orderbook.gasLimit }}
+{{- end }}
+
+{{- if .Values.timeboost.enabled }}
+7. Timeboost/MEV is enabled
+{{- end }}

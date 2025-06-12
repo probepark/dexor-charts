@@ -1,0 +1,74 @@
+{{- if and .Values.nitroNode.enabled .Values.nitroNode.ingress.enabled -}}
+{{- $fullName := include "kaia-orderbook-dex-core.fullname" . -}}
+{{- $httpPort := .Values.nitroNode.service.httpPort -}}
+{{- $wsPort := .Values.nitroNode.service.wsPort -}}
+{{- if and .Values.nitroNode.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.nitroNode.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.nitroNode.ingress.annotations "kubernetes.io/ingress.class" .Values.nitroNode.ingress.className}}
+  {{- end }}
+{{- end }}
+{{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: networking.k8s.io/v1
+{{- else if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: networking.k8s.io/v1beta1
+{{- else -}}
+apiVersion: extensions/v1beta1
+{{- end }}
+kind: Ingress
+metadata:
+  name: {{ $fullName }}-nitro
+  labels:
+    {{- include "kaia-orderbook-dex-core.nitroNode.labels" . | nindent 4 }}
+  {{- with .Values.nitroNode.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if and .Values.nitroNode.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ .Values.nitroNode.ingress.className }}
+  {{- end }}
+  {{- if .Values.nitroNode.ingress.tls }}
+  tls:
+    {{- range .Values.nitroNode.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.nitroNode.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            {{- if and .pathType (semverCompare ">=1.18-0" $.Capabilities.KubeVersion.GitVersion) }}
+            pathType: {{ .pathType }}
+            {{- end }}
+            backend:
+              {{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion }}
+              service:
+                name: {{ $fullName }}-nitro
+                port:
+                  {{- if eq .port "http" }}
+                  number: {{ $httpPort }}
+                  {{- else if eq .port "ws" }}
+                  number: {{ $wsPort }}
+                  {{- else }}
+                  number: {{ .port }}
+                  {{- end }}
+              {{- else }}
+              serviceName: {{ $fullName }}-nitro
+              {{- if eq .port "http" }}
+              servicePort: {{ $httpPort }}
+              {{- else if eq .port "ws" }}
+              servicePort: {{ $wsPort }}
+              {{- else }}
+              servicePort: {{ .port }}
+              {{- end }}
+              {{- end }}
+          {{- end }}
+    {{- end }}
+{{- end }}

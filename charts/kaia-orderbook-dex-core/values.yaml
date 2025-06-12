@@ -1,0 +1,214 @@
+# Default values for kaia-orderbook-dex-core
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# Nitro Node Configuration
+nitroNode:
+  enabled: true
+  replicaCount: 1
+  
+  image:
+    repository: kaia-orderbook-nitro-node
+    pullPolicy: IfNotPresent
+    tag: ""
+  
+  service:
+    type: ClusterIP
+    httpPort: 8547
+    wsPort: 8548
+    feedPort: 9642
+    annotations: {}
+  
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: rpc.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+            port: http
+    tls: []
+  
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+    requests:
+      cpu: 2000m
+      memory: 4Gi
+  
+  persistence:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 100Gi
+    storageClass: ""
+    annotations: {}
+  
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  
+  # Command line arguments for nitro node
+  args:
+    - "--chain.id=412346"
+    - "--parent-chain.connection.url=https://public-en-kairos.node.kaia.io"
+    - "--http.addr=0.0.0.0"
+    - "--http.port=8547"
+    - "--http.api=net,web3,eth,arb,arborderbook"
+    - "--ws.addr=0.0.0.0"
+    - "--ws.port=8548"
+    - "--metrics"
+    - "--metrics-server.addr=0.0.0.0"
+    - "--metrics-server.port=6060"
+
+# Validator Configuration
+validator:
+  enabled: false
+  replicaCount: 1
+  
+  image:
+    repository: kaia-orderbook-nitro-node-validator
+    pullPolicy: IfNotPresent
+    tag: ""
+  
+  service:
+    type: ClusterIP
+    port: 8549
+    annotations: {}
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+  
+  persistence:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 50Gi
+    storageClass: ""
+  
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Sequencer Configuration
+sequencer:
+  enabled: true
+  
+  # Redis configuration for sequencer coordination
+  redis:
+    enabled: true
+    url: "redis://redis-service:6379"
+    
+  # Batch poster configuration
+  batchPoster:
+    enabled: true
+    maxDelay: "10m"
+    compressionLevel: "well"
+    
+  # Data availability configuration
+  dataAvailability:
+    enabled: true
+    mode: "onchain"  # onchain, anytrust, or celestia
+
+# Environment Configuration
+environment:
+  phase: "dev"
+  
+  # Parent chain configuration
+  parentChain:
+    chainId: 1001  # Kaia testnet
+    rpcUrl: "https://public-en-kairos.node.kaia.io"
+    wsUrl: "wss://public-en-kairos.node.kaia.io/ws"
+  
+  # Child chain configuration  
+  childChain:
+    chainId: 412346
+    chainName: "Kaia Orderbook DEX"
+    
+  # Contract addresses (to be set after deployment)
+  contracts:
+    rollup: ""
+    sequencerInbox: ""
+    bridge: ""
+    
+# Monitoring
+monitoring:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+    namespace: ""
+    interval: 30s
+    scrapeTimeout: 10s
+  
+  prometheus:
+    port: 6060
+    path: /metrics
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod Security Context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+# Container Security Context
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false  # Nitro needs to write to disk
+  runAsNonRoot: true
+  runAsUser: 1000
+  capabilities:
+    drop:
+    - ALL
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: false  # Single replica by default
+  minAvailable: 1
+
+# Timeboost/MEV Configuration
+timeboost:
+  enabled: false
+  auctioneer:
+    enabled: false
+    redisUrl: "redis://redis-service:6379"
+  expressLaneController:
+    enabled: false
+
+# Additional Nitro Configuration
+nitroConfig:
+  # Archive mode
+  archiveMode: false
+  
+  # Dangerous configuration (use with caution)
+  dangerous:
+    noL1Listener: false
+    
+  # Feed configuration
+  feed:
+    output:
+      enable: true
+      port: 9642
+    input:
+      url: []
+      
+  # Orderbook specific configuration
+  orderbook:
+    enabled: true
+    gasLimit: 50000000

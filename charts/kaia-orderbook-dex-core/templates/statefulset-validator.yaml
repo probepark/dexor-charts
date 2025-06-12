@@ -1,0 +1,105 @@
+{{- if .Values.validator.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "kaia-orderbook-dex-core.fullname" . }}-validator
+  labels:
+    {{- include "kaia-orderbook-dex-core.validator.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "kaia-orderbook-dex-core.fullname" . }}-validator
+  replicas: {{ .Values.validator.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kaia-orderbook-dex-core.validator.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kaia-orderbook-dex-core.validator.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "kaia-orderbook-dex-core.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: validator
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "kaia-orderbook-dex-core.validator.image" . }}
+          imagePullPolicy: {{ .Values.validator.image.pullPolicy }}
+          command: ["/usr/local/bin/nitro"]
+          args:
+            - "--node.type=validator"
+            - "--chain.id={{ .Values.environment.childChain.chainId }}"
+            - "--parent-chain.connection.url={{ .Values.environment.parentChain.rpcUrl }}"
+            - "--http.addr=0.0.0.0"
+            - "--http.port={{ .Values.validator.service.port }}"
+            - "--http.api=net,web3,eth,arb"
+            - "--metrics"
+            - "--metrics-server.addr=0.0.0.0"
+            - "--metrics-server.port={{ .Values.monitoring.prometheus.port }}"
+            - "--persistent.chain=/data/chain"
+            - "--persistent.global-config=/data/config"
+            {{- if .Values.nitroConfig.archiveMode }}
+            - "--node.archive"
+            {{- end }}
+          env:
+            - name: NITRO_PHASE
+              value: {{ .Values.environment.phase | quote }}
+            {{- if .Values.environment.contracts.rollup }}
+            - name: ROLLUP_ADDRESS
+              value: {{ .Values.environment.contracts.rollup | quote }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.validator.service.port }}
+              protocol: TCP
+            {{- if .Values.monitoring.enabled }}
+            - name: metrics
+              containerPort: {{ .Values.monitoring.prometheus.port }}
+              protocol: TCP
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.validator.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      {{- with .Values.validator.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.validator.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.validator.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  {{- if .Values.validator.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - {{ .Values.validator.persistence.accessMode }}
+        storageClassName: {{ .Values.validator.persistence.storageClass | default .Values.global.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.validator.persistence.size }}
+  {{- end }}
+{{- end }}

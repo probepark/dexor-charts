@@ -1,0 +1,59 @@
+{{- if .Values.event.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kaia-orderbook-dex-backend.fullname" . }}-event
+  labels:
+    {{- include "kaia-orderbook-dex-backend.event.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.event.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kaia-orderbook-dex-backend.event.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kaia-orderbook-dex-backend.event.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "kaia-orderbook-dex-backend.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: event
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "kaia-orderbook-dex-backend.event.image" . }}
+          imagePullPolicy: {{ .Values.event.image.pullPolicy }}
+          command: ["/app/event"]
+          env:
+            - name: KAIA_ORDERBOOK_PHASE
+              value: {{ .Values.environment.phase | quote }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.event.service.targetPort }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.event.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.event.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.event.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.event.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
