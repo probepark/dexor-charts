@@ -1,0 +1,88 @@
+{{- if .Values.nitroNode.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kaia-orderbook-dex-core.fullname" . }}-config
+  labels:
+    {{- include "kaia-orderbook-dex-core.labels" . | nindent 4 }}
+data:
+  {{- /* Dynamic sequencer config generation */}}
+  {{- if .Values.config.generateSequencerConfig }}
+  sequencer_config.json: |
+    {
+      "parent-chain": {
+        "connection": {
+          "url": {{ .Values.environment.parentChain.rpcUrl | quote }}
+        }
+      },
+      "chain": {
+        "id": {{ .Values.environment.childChain.chainId }},
+        "info-files": [
+          "/config/l2_chain_info.json"
+        ]
+      },
+      "node": {
+        "sequencer": {{ .Values.sequencer.enabled }},
+        {{- if .Values.sequencer.enabled }}
+        "dangerous": {
+          "no-sequencer-coordinator": {{ not .Values.sequencer.redis.enabled }},
+          "disable-blob-reader": true
+        },
+        "delayed-sequencer": {
+          "enable": true
+        },
+        "batch-poster": {
+          "enable": {{ .Values.sequencer.batchPoster.enabled }},
+          "max-delay": {{ .Values.sequencer.batchPoster.maxDelay | quote }},
+          "compression-level": {{ .Values.sequencer.batchPoster.compressionLevel | default 6 }},
+          {{- if .Values.sequencer.batchPoster.parentChainWallet }}
+          "parent-chain-wallet": {
+            "private-key": {{ .Values.sequencer.batchPoster.parentChainWallet.privateKey | quote }}
+          }
+          {{- end }}
+        },
+        "data-availability": {
+          "enable": {{ .Values.sequencer.dataAvailability.enabled }},
+          "parent-chain-node-url": {{ .Values.environment.parentChain.rpcUrl | quote }},
+          {{- if .Values.environment.contracts.sequencerInbox }}
+          "sequencer-inbox-address": {{ .Values.environment.contracts.sequencerInbox | quote }}
+          {{- end }}
+        }
+        {{- end }}
+      },
+      "execution": {
+        "sequencer": {
+          "enable": {{ .Values.sequencer.enabled }}
+        }
+      },
+      "http": {
+        "addr": "0.0.0.0",
+        "vhosts": "*",
+        "corsdomain": "*"
+      },
+      "ws": {
+        "addr": "0.0.0.0"
+      }
+    }
+  {{- end }}
+
+  {{- /* Include all config files from values */}}
+  {{- range $filename, $content := .Values.config.files }}
+  {{ $filename }}: |
+{{ $content | indent 4 }}
+  {{- end }}
+
+  {{- /* Legacy support for individual config fields */}}
+  {{- if and (not .Values.config.files) .Values.environment.chainConfig }}
+  l2_chain_config.json: |
+{{ .Values.environment.chainConfig | indent 4 }}
+  {{- end }}
+  {{- if and (not .Values.config.files) .Values.environment.chainInfo }}
+  l2_chain_info.json: |
+{{ .Values.environment.chainInfo | indent 4 }}
+  {{- end }}
+  {{- if and (not .Values.config.files) .Values.environment.deploymentInfo }}
+  deployment.json: |
+{{ .Values.environment.deploymentInfo | indent 4 }}
+  {{- end }}
+{{- end }}

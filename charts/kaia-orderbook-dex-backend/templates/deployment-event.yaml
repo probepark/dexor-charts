@@ -28,10 +28,19 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: {{ include "kaia-orderbook-dex-backend.event.image" . }}
           imagePullPolicy: {{ .Values.event.image.pullPolicy }}
-          command: ["/app/event"]
+          {{- if .Values.event.command }}
+          command: {{ .Values.event.command }}
+          {{- end }}
           env:
             - name: KAIA_ORDERBOOK_PHASE
               value: {{ .Values.environment.phase | quote }}
+            {{- with .Values.event.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.event.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.event.service.targetPort }}
@@ -41,9 +50,14 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            - name: config
+              mountPath: /dex/event/config
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: config
+          configMap:
+            name: {{ include "kaia-orderbook-dex-backend.fullname" . }}-config
       {{- with .Values.event.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -30,10 +30,19 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: {{ include "kaia-orderbook-dex-backend.api.image" . }}
           imagePullPolicy: {{ .Values.api.image.pullPolicy }}
-          command: ["/app/api"]
+          {{- if .Values.api.command }}
+          command: {{ .Values.api.command }}
+          {{- end }}
           env:
             - name: KAIA_ORDERBOOK_PHASE
               value: {{ .Values.environment.phase | quote }}
+            {{- with .Values.api.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.api.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.api.service.targetPort }}
@@ -47,9 +56,14 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            - name: config
+              mountPath: /dex/api/config
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: config
+          configMap:
+            name: {{ include "kaia-orderbook-dex-backend.fullname" . }}-config
       {{- with .Values.api.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

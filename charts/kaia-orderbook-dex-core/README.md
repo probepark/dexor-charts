@@ -12,6 +12,21 @@ This Helm chart deploys the Kaia Orderbook DEX Core (Nitro Node) on a Kubernetes
 
 ## Installing the Chart
 
+### Quick Start with Kairos Testnet
+
+1. First, deploy contracts to Kairos testnet:
+```bash
+cd ../../scripts
+./deploy-to-kairos.sh
+```
+
+2. Deploy to Kubernetes using the generated configuration:
+```bash
+./deploy-core-to-k8s.sh
+```
+
+### Manual Installation
+
 To install the chart with the release name `my-release`:
 
 ```bash

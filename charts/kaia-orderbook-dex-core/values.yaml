@@ -11,19 +11,19 @@ global:
 nitroNode:
   enabled: true
   replicaCount: 1
-  
+
   image:
-    repository: kaia-orderbook-nitro-node
+    repository: kaia-orderbook-dex-core
     pullPolicy: IfNotPresent
-    tag: ""
-  
+    tag: "dev"
+
   service:
     type: ClusterIP
     httpPort: 8547
     wsPort: 8548
     feedPort: 9642
     annotations: {}
-  
+
   ingress:
     enabled: false
     className: ""
@@ -35,7 +35,7 @@ nitroNode:
             pathType: Prefix
             port: http
     tls: []
-  
+
   resources:
     limits:
       cpu: 4000m
@@ -43,46 +43,68 @@ nitroNode:
     requests:
       cpu: 2000m
       memory: 4Gi
-  
+
   persistence:
     enabled: true
     accessMode: ReadWriteOnce
     size: 100Gi
     storageClass: ""
     annotations: {}
-  
+
   nodeSelector: {}
   tolerations: []
   affinity: {}
-  
+
   # Command line arguments for nitro node
-  args:
-    - "--chain.id=412346"
-    - "--parent-chain.connection.url=https://public-en-kairos.node.kaia.io"
-    - "--http.addr=0.0.0.0"
-    - "--http.port=8547"
-    - "--http.api=net,web3,eth,arb,arborderbook"
-    - "--ws.addr=0.0.0.0"
-    - "--ws.port=8548"
-    - "--metrics"
-    - "--metrics-server.addr=0.0.0.0"
-    - "--metrics-server.port=6060"
+  args: []  # Most args are now dynamically generated based on configuration
+
+  # Configuration file path (if using config file)
+  configFile: "/config/sequencer_config.json"
+
+  # Persistent chain path
+  persistentChain: "/data"
+
+  # WASM module root (will be auto-detected from image)
+  wasmModuleRoot: ""
+
+  # HTTP API configuration
+  httpApi: "net,web3,eth,txpool,debug"
+
+  # Log level (0-5, where 3 is info)
+  logLevel: 3
+
+  # GraphQL configuration
+  graphql:
+    enabled: true
+
+  # Profiling configuration
+  pprof:
+    enabled: true
+
+  # Staker configuration
+  staker:
+    enabled: false
+    interval: 0
+
+  # Health check configuration
+  healthCheck:
+    enabled: true
 
 # Validator Configuration
 validator:
   enabled: false
   replicaCount: 1
-  
+
   image:
     repository: kaia-orderbook-nitro-node-validator
     pullPolicy: IfNotPresent
     tag: ""
-  
+
   service:
     type: ClusterIP
     port: 8549
     annotations: {}
-  
+
   resources:
     limits:
       cpu: 2000m
@@ -90,13 +112,13 @@ validator:
     requests:
       cpu: 1000m
       memory: 2Gi
-  
+
   persistence:
     enabled: true
     accessMode: ReadWriteOnce
     size: 50Gi
     storageClass: ""
-  
+
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -104,44 +126,109 @@ validator:
 # Sequencer Configuration
 sequencer:
   enabled: true
-  
+
+  # Sequencer coordinator URL
+  coordinatorUrl: "http://0.0.0.0:8547"
+
+  # Sequencer queue configuration
+  queueSize: 4096
+  maxBlockSpeed: "250ms"
+
   # Redis configuration for sequencer coordination
   redis:
-    enabled: true
+    enabled: false  # Set to true for multi-sequencer setup
     url: "redis://redis-service:6379"
-    
+
   # Batch poster configuration
   batchPoster:
-    enabled: true
-    maxDelay: "10m"
+    enabled: false  # Will be enabled after initial deployment
+    maxDelay: "30s"
     compressionLevel: "well"
-    
+    parentChainWallet:
+      privateKey: "49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1"
+
   # Data availability configuration
   dataAvailability:
-    enabled: true
+    enabled: false
     mode: "onchain"  # onchain, anytrust, or celestia
 
 # Environment Configuration
 environment:
   phase: "dev"
-  
+
   # Parent chain configuration
   parentChain:
-    chainId: 1001  # Kaia testnet
-    rpcUrl: "https://public-en-kairos.node.kaia.io"
-    wsUrl: "wss://public-en-kairos.node.kaia.io/ws"
-  
-  # Child chain configuration  
+    chainId: 1001  # Kaia Kairos testnet
+    rpcUrl: "https://archive-en-kairos.node.kaia.io"
+    wsUrl: "wss://archive-en-kairos.node.kaia.io/ws"
+
+  # Child chain configuration
   childChain:
     chainId: 412346
     chainName: "Kaia Orderbook DEX"
-    
+
   # Contract addresses (to be set after deployment)
   contracts:
     rollup: ""
     sequencerInbox: ""
     bridge: ""
-    
+    inbox: ""
+
+  # Chain configuration JSON (to be set after deployment)
+  chainConfig: ""
+
+  # Chain info JSON (to be set after deployment)
+  chainInfo: ""
+
+  # Deployment info JSON (to be set after deployment)
+  deploymentInfo: ""
+
+# Configuration Management
+config:
+  # Generate sequencer config dynamically from values
+  generateSequencerConfig: true
+
+  # Configuration files to be stored in ConfigMap
+  # This allows injecting multiple config files
+  files: {}
+    # Example structure:
+    # l2_chain_info.json: |
+    #   {
+    #     "chain-id": 412346,
+    #     "parent-chain-id": 1001,
+    #     "chain-config": {...}
+    #   }
+    # deployment.json: |
+    #   {
+    #     "rollup": "0x...",
+    #     "validators": [...],
+    #     "batch-poster": "0x..."
+    #   }
+    # custom-config.json: |
+    #   {
+    #     "custom": "values"
+    #   }
+
+# Nitro Configuration
+nitroConfig:
+  # Archive mode for full node
+  archiveMode: false
+
+  # Orderbook specific settings
+  orderbook:
+    enabled: false
+    gasLimit: 500000000
+
+  # Feed configuration
+  feed:
+    output:
+      enable: false
+      port: 9642
+
+  # Dangerous flags (use with caution)
+  dangerous:
+    noL1Listener: false
+
 # Monitoring
 monitoring:
   enabled: false
@@ -150,7 +237,7 @@ monitoring:
     namespace: ""
     interval: 30s
     scrapeTimeout: 10s
-  
+
   prometheus:
     port: 6060
     path: /metrics
@@ -190,25 +277,3 @@ timeboost:
     redisUrl: "redis://redis-service:6379"
   expressLaneController:
     enabled: false
-
-# Additional Nitro Configuration
-nitroConfig:
-  # Archive mode
-  archiveMode: false
-  
-  # Dangerous configuration (use with caution)
-  dangerous:
-    noL1Listener: false
-    
-  # Feed configuration
-  feed:
-    output:
-      enable: true
-      port: 9642
-    input:
-      url: []
-      
-  # Orderbook specific configuration
-  orderbook:
-    enabled: true
-    gasLimit: 50000000

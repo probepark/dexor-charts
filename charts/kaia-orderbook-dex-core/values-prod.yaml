@@ -1,0 +1,134 @@
+# Production environment values for kaia-orderbook-dex-core
+
+# Inherit all defaults from values.yaml
+# Only override what's specific to prod environment
+
+global:
+  imageRegistry: "asia-northeast3-docker.pkg.dev/orderbook-dex-prod/prod-docker-registry"
+
+nitroNode:
+  image:
+    tag: "prod"
+    pullPolicy: IfNotPresent
+  
+  replicaCount: 1  # Single sequencer instance
+  
+  resources:
+    limits:
+      cpu: 3500m
+      memory: 14Gi
+    requests:
+      cpu: 2000m
+      memory: 8Gi
+  
+  persistence:
+    size: 200Gi
+    storageClass: "ssd"  # Use SSD storage class
+  
+  # Production log level
+  logLevel: 3  # Info level
+  pprof:
+    enabled: false  # Disable profiling in production
+  
+  # Node selector for sequencer nodes
+  nodeSelector:
+    workload: arbitrum-sequencer
+  
+  # Tolerations for sequencer node taints
+  tolerations:
+  - key: workload
+    operator: Equal
+    value: sequencer
+    effect: NoSchedule
+  - key: environment
+    operator: Equal
+    value: prod
+    effect: NoSchedule
+
+# Production environment configuration
+environment:
+  phase: "prod"
+  parentChain:
+    chainId: 8217  # Kaia mainnet
+    rpcUrl: "https://archive-en.node.kaia.io"
+
+# Enable monitoring in production
+monitoring:
+  enabled: true
+  prometheus:
+    port: 6060
+
+# Sequencer configuration for production
+sequencer:
+  enabled: true
+  redis:
+    enabled: true  # Enable Redis for coordination
+    host: "redis-prod"
+    port: 6379
+  batchPoster:
+    enabled: true
+    interval: 10
+    maxSize: 100000
+  queueSize: 1024
+  maxBlockSpeed: "250ms"
+
+# Staker configuration (if needed)
+nitroNode:
+  staker:
+    enabled: false  # Enable if this node should also stake
+    interval: 50
+
+# Service configuration
+service:
+  type: ClusterIP
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+    cloud.google.com/backend-config: '{"default": "sequencer-backend-config"}'
+
+# Ingress configuration for production
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+  hosts:
+    - host: rpc.arbitrum.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          port: http
+  tls:
+    - secretName: arbitrum-rpc-tls
+      hosts:
+        - rpc.arbitrum.example.com
+
+# Pod security configuration
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+  capabilities:
+    drop:
+    - ALL
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Horizontal Pod Autoscaler (if needed for read replicas)
+autoscaling:
+  enabled: false  # Sequencer typically doesn't autoscale
+  minReplicas: 1
+  maxReplicas: 1

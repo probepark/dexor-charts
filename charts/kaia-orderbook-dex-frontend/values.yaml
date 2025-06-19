@@ -65,69 +65,14 @@ environment:
   apiUrl: "https://api-orderbook.dev.kaia.io/api/v1"
   wsUrl: "wss://api-orderbook.dev.kaia.io/ws"
 
-# Nginx configuration for serving SPA
-nginx:
-  serverConfig: |
-    server {
-        listen 80;
-        server_name _;
-        
-        root /usr/share/nginx/html;
-        index index.html;
-        
-        # Gzip compression
-        gzip on;
-        gzip_types text/plain text/css text/javascript application/javascript application/json;
-        gzip_min_length 1000;
-        
-        # Cache static assets
-        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-            expires 1y;
-            add_header Cache-Control "public, immutable";
-        }
-        
-        # SPA routing - serve index.html for all routes
-        location / {
-            try_files $uri $uri/ /index.html;
-            
-            # Security headers
-            add_header X-Frame-Options "SAMEORIGIN" always;
-            add_header X-Content-Type-Options "nosniff" always;
-            add_header X-XSS-Protection "1; mode=block" always;
-            add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-        }
-        
-        # Health check endpoint
-        location /health {
-            access_log off;
-            return 200 "healthy\n";
-            add_header Content-Type text/plain;
-        }
-        
-        # Ping endpoint for monitoring
-        location /ping.txt {
-            access_log off;
-        }
-    }
-
 serviceAccount:
   create: true
   annotations: {}
   name: ""
 
-podSecurityContext:
-  runAsNonRoot: true
-  runAsUser: 101
-  fsGroup: 101
+podSecurityContext: {}
 
-securityContext:
-  allowPrivilegeEscalation: false
-  readOnlyRootFilesystem: true
-  runAsNonRoot: true
-  runAsUser: 101
-  capabilities:
-    drop:
-    - ALL
+securityContext: {}
 
 nodeSelector: {}
 tolerations: []

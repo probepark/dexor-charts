@@ -1,0 +1,92 @@
+# Development environment overrides for kaia-orderbook-dex-frontend
+
+global:
+  imageRegistry: "asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry"
+
+replicaCount: 1
+
+image:
+  repository: kaia-orderbook-dex-frontend
+  tag: "dev"
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-dev"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"
+    # WebSocket support
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/upgrade: "$http_upgrade"
+    nginx.ingress.kubernetes.io/connection: "$connection_upgrade"
+  hosts:
+    - host: www.dexor.trade
+      paths:
+        - path: /
+          pathType: Prefix
+    - host: dexor.trade
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: dexor-trade-tls
+      hosts:
+        - www.dexor.trade
+        - dexor.trade
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi
+
+autoscaling:
+  enabled: false
+
+# Environment configuration
+environment:
+  phase: "development"
+  apiUrl: "https://api.dexor.trade/api/v1"
+  wsUrl: "wss://api.dexor.trade/ws"
+
+# Build-time environment variables
+buildEnv:
+  VITE_ENV: "development"
+  VITE_API: "https://api.dexor.trade/api/v1"
+
+# ServiceAccount
+serviceAccount:
+  create: true
+  annotations:
+    iam.gke.io/gcp-service-account: "kaia-dex-frontend-sa@orderbook-dex-dev.iam.gserviceaccount.com"
+  name: "kaia-dex-frontend"
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: false  # Disable for dev environment
+
+# Extra volumes for nginx configuration
+extraVolumes: []
+
+extraVolumeMounts: []
+
+# Monitoring
+monitoring:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+    namespace: "monitoring"
+    interval: 30s
+    scrapeTimeout: 10s
+

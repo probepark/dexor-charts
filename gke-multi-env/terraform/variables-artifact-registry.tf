@@ -53,3 +53,9 @@ variable "helm_retention_days" {
   type        = number
   default     = 30
 }
+
+variable "enable_workload_identity_for_apps" {
+  description = "Enable Workload Identity for application pods"
+  type        = bool
+  default     = false
+}

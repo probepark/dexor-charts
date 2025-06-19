@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kaia-orderbook-dex-backend.fullname" . }}-config
+  labels:
+    {{- include "kaia-orderbook-dex-backend.labels" . | nindent 4 }}
+data:
+  dev.toml: |
+{{ .Files.Get "config/dev.toml" | indent 4 }}

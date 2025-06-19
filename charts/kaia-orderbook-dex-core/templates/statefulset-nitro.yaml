@@ -31,21 +31,27 @@ spec:
           imagePullPolicy: {{ .Values.nitroNode.image.pullPolicy }}
           command: ["/usr/local/bin/nitro"]
           args:
+            {{- if .Values.nitroNode.configFile }}
+            - "--conf.file={{ .Values.nitroNode.configFile }}"
+            {{- end }}
+            {{- if .Values.nitroNode.persistentChain }}
+            - "--persistent.chain={{ .Values.nitroNode.persistentChain }}"
+            {{- end }}
+            {{- if .Values.nitroNode.args }}
             {{- toYaml .Values.nitroNode.args | nindent 12 }}
+            {{- end }}
             {{- if .Values.nitroConfig.archiveMode }}
             - "--node.archive"
             {{- end }}
             {{- if .Values.sequencer.enabled }}
             - "--node.sequencer"
-            - "--sequencer.enable"
+            - "--execution.sequencer.enable"
             {{- if .Values.sequencer.redis.enabled }}
             - "--node.seq-coordinator.enable"
             - "--node.seq-coordinator.redis-url={{ .Values.sequencer.redis.url }}"
-            {{- end }}
-            {{- if .Values.sequencer.batchPoster.enabled }}
-            - "--node.batch-poster.enable"
-            - "--node.batch-poster.max-delay={{ .Values.sequencer.batchPoster.maxDelay }}"
-            - "--node.batch-poster.compression-level={{ .Values.sequencer.batchPoster.compressionLevel }}"
+            - "--node.seq-coordinator.my-url={{ .Values.sequencer.coordinatorUrl }}"
+            {{- else }}
+            - "--node.dangerous.no-sequencer-coordinator"
             {{- end }}
             {{- end }}
             {{- if .Values.nitroConfig.orderbook.enabled }}
@@ -59,14 +65,51 @@ spec:
             {{- end }}
             {{- end }}
             {{- if .Values.nitroConfig.feed.output.enable }}
-            - "--feed.output.enable"
-            - "--feed.output.port={{ .Values.nitroConfig.feed.output.port }}"
+            - "--node.feed.output.enable"
+            - "--node.feed.output.port={{ .Values.nitroConfig.feed.output.port }}"
             {{- end }}
             {{- if .Values.nitroConfig.dangerous.noL1Listener }}
             - "--node.dangerous.no-l1-listener"
             {{- end }}
-            - "--persistent.chain=/data/chain"
-            - "--persistent.global-config=/data/config"
+            {{- if .Values.nitroNode.wasmModuleRoot }}
+            - "--validation.wasm.allowed-wasm-module-roots={{ .Values.nitroNode.wasmModuleRoot }}"
+            {{- end }}
+            {{- if .Values.sequencer.enabled }}
+            - "--execution.sequencer.queue-size={{ .Values.sequencer.queueSize }}"
+            - "--execution.sequencer.max-block-speed={{ .Values.sequencer.maxBlockSpeed }}"
+            - "--execution.sequencer.max-revert-gas-reject=0"
+            {{- end }}
+            {{- if .Values.sequencer.batchPoster.enabled }}
+            - "--node.batch-poster.enable=true"
+            - "--node.batch-poster.data-poster.max-mempool-transactions=0"
+            - "--node.batch-poster.data-poster.max-mempool-weight=0"
+            - "--node.batch-poster.data-poster.max-queued-transactions=0"
+            - "--node.batch-poster.max-delay={{ .Values.sequencer.batchPoster.maxDelay }}"
+            - "--node.batch-poster.compression-level={{ .Values.sequencer.batchPoster.compressionLevel | default 6 }}"
+            {{- end }}
+            {{- if .Values.nitroNode.staker }}
+            - "--node.staker.enable={{ .Values.nitroNode.staker.enabled }}"
+            - "--node.staker.staker-interval={{ .Values.nitroNode.staker.interval }}"
+            {{- end }}
+            {{- if .Values.monitoring.enabled }}
+            - "--metrics"
+            - "--metrics-server.addr=0.0.0.0"
+            - "--metrics-server.port={{ .Values.monitoring.prometheus.port }}"
+            {{- end }}
+            {{- if .Values.nitroNode.pprof.enabled }}
+            - "--pprof"
+            - "--pprof-cfg.addr=0.0.0.0"
+            {{- end }}
+            {{- if .Values.nitroNode.logLevel }}
+            - "--log-level={{ .Values.nitroNode.logLevel }}"
+            {{- end }}
+            {{- if .Values.nitroNode.graphql.enabled }}
+            - "--graphql.enable"
+            - "--graphql.vhosts=*"
+            - "--graphql.corsdomain=*"
+            {{- end }}
+            # Additional HTTP API configuration
+            - "--http.api={{ .Values.nitroNode.httpApi }}"
           env:
             - name: NITRO_PHASE
               value: {{ .Values.environment.phase | quote }}
@@ -95,6 +138,7 @@ spec:
               containerPort: {{ .Values.monitoring.prometheus.port }}
               protocol: TCP
             {{- end }}
+          {{- if .Values.nitroNode.healthCheck.enabled }}
           livenessProbe:
             httpGet:
               path: /
@@ -107,11 +151,17 @@ spec:
               port: http
             initialDelaySeconds: 30
             periodSeconds: 10
+          {{- end }}
           resources:
             {{- toYaml .Values.nitroNode.resources | nindent 12 }}
           volumeMounts:
             - name: data
               mountPath: /data
+            {{- if .Values.nitroNode.configFile }}
+            - name: config
+              mountPath: /config
+              readOnly: true
+            {{- end }}
       {{- with .Values.nitroNode.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -123,6 +173,12 @@ spec:
       {{- with .Values.nitroNode.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+      {{- if .Values.nitroNode.configFile }}
+        - name: config
+          configMap:
+            name: {{ include "kaia-orderbook-dex-core.fullname" . }}-config
       {{- end }}
   {{- if .Values.nitroNode.persistence.enabled }}
   volumeClaimTemplates:

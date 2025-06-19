@@ -13,8 +13,6 @@ spec:
       {{- include "kaia-orderbook-dex-frontend.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      annotations:
-        checksum/nginx-config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
       labels:
         {{- include "kaia-orderbook-dex-frontend.selectorLabels" . | nindent 8 }}
     spec:
@@ -42,29 +40,12 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
-            - name: nginx-config
-              mountPath: /etc/nginx/conf.d
-              readOnly: true
-            - name: env-config
-              mountPath: /usr/share/nginx/html/env-config.js
-              subPath: env-config.js
-              readOnly: true
-            - name: cache
-              mountPath: /var/cache/nginx
             - name: run
               mountPath: /var/run
             {{- with .Values.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
       volumes:
-        - name: nginx-config
-          configMap:
-            name: {{ include "kaia-orderbook-dex-frontend.fullname" . }}-nginx
-        - name: env-config
-          configMap:
-            name: {{ include "kaia-orderbook-dex-frontend.fullname" . }}-env
-        - name: cache
-          emptyDir: {}
         - name: run
           emptyDir: {}
         {{- with .Values.extraVolumes }}

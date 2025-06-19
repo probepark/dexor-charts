@@ -1,0 +1,37 @@
+# Example Terraform variables file
+# Copy this file to terraform.tfvars and update with your values
+
+# Required variables
+project_id         = "your-gcp-project-id"
+environment        = "dev"  # or "prod"
+domain_suffix      = "example.com"
+dns_zone_name      = "example-zone"
+cert_manager_email = "admin@example.com"
+
+# Optional variables with defaults
+region              = "asia-northeast3"
+enable_external_dns = true
+enable_cloud_sql    = true
+enable_redis        = true
+db_name             = "app_database"
+db_user             = "app_user"
+
+# Enable Arbitrum sequencer node pool
+enable_sequencer_pool = false  # Set to true to create sequencer node pool
+
+# Artifact Registry configuration (if using artifact-registry.tf)
+# artifact_registry_location = "asia-northeast3"
+# artifact_registry_repositories = {
+#   "docker-images" = {
+#     description = "Docker images repository"
+#     format      = "DOCKER"
+#   }
+# }
+
+# Secret Manager configuration (if using secret-manager.tf)
+# enable_secret_manager = true
+# secrets = {
+#   "db-password" = {
+#     data = "your-secure-password"
+#   }
+# }

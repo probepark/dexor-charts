@@ -1,0 +1,99 @@
+# Development environment overrides for kaia-orderbook-dex-backend
+
+global:
+  imageRegistry: "asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry"
+
+# API Service Configuration
+api:
+  replicaCount: 1
+
+  image:
+    repository: kaia-orderbook-dex-backend/api-app
+    tag: "dev"
+
+  service:
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+    wsPort: 9090
+    wsTargetPort: 9090
+
+  ingress:
+    enabled: true # Temporarily disabled due to webhook issues
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-dev"
+      nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+      # CORS support
+      nginx.ingress.kubernetes.io/enable-cors: "true"
+      nginx.ingress.kubernetes.io/cors-allow-origin: "https://www.dexor.trade,https://dexor.trade"
+      nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+      nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+      # WebSocket support
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    hosts:
+      - host: api.dexor.trade
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: api-dexor-trade-tls
+        hosts:
+          - api.dexor.trade
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+  env:
+    - name: KAIA_ORDERBOOK_PHASE
+      value: "dev"
+
+# Event Service Configuration
+event:
+  replicaCount: 1
+
+  image:
+    repository: kaia-orderbook-dex-backend/event-app
+    tag: "dev"
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+  env:
+    - name: KAIA_ORDERBOOK_PHASE
+      value: "dev"
+
+# ServiceAccount
+serviceAccount:
+  create: true
+  annotations:
+    iam.gke.io/gcp-service-account: "kaia-dex-backend-sa@orderbook-dex-dev.iam.gserviceaccount.com"
+  name: "kaia-dex-backend"
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: false  # Disable for dev environment
+
+# Network Policy
+networkPolicy:
+  enabled: false  # Disable for dev environment
+
+# Monitoring
+monitoring:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+    namespace: "monitoring"
+    interval: 30s
+    scrapeTimeout: 10s

@@ -113,3 +113,65 @@ deploy-images: docker-push-all helm-update-images ## Build, push all images and 
 	@echo "✅ All images deployed and Helm charts updated!"
 	@echo ""
 	@$(MAKE) docker-urls
+
+# Core Deployment Commands
+.PHONY: deploy-core-contracts
+deploy-core-contracts: ## Deploy core contracts to Kairos testnet
+	@echo "🚀 Deploying contracts to Kairos testnet..."
+	@./scripts/deploy-to-kairos.sh
+
+.PHONY: sync-core-values
+sync-core-values: ## Sync deployed contract info to values-dev.yaml
+	@echo "🔄 Syncing deployment configuration to values-dev.yaml..."
+	@DEPLOY_MODE=sync ./scripts/deploy-and-sync-to-k8s.sh
+
+.PHONY: deploy-core-full
+deploy-core-full: ## Deploy contracts and sync to values-dev.yaml
+	@echo "🚀 Full deployment: contracts + values sync..."
+	@DEPLOY_MODE=full ./scripts/deploy-and-sync-to-k8s.sh
+
+.PHONY: deploy-core-k8s
+deploy-core-k8s: ## Deploy core to Kubernetes using current values-dev.yaml
+	@echo "☸️  Deploying to Kubernetes..."
+	@./scripts/deploy-core-to-k8s.sh
+
+.PHONY: deploy-core-all
+deploy-core-all: deploy-core-full deploy-core-k8s ## Full deployment: contracts + sync + k8s
+	@echo "✅ Complete deployment finished!"
+
+# Helm Commands
+.PHONY: helm-install
+helm-install: ## Install all Helm charts
+	@echo "📦 Installing Helm charts..."
+	helm install kaia-dex-core ./charts/kaia-orderbook-dex-core -f ./charts/kaia-orderbook-dex-core/values-dev.yaml -n kaia-dex
+
+.PHONY: helm-upgrade
+helm-upgrade: ## Upgrade all Helm charts
+	@echo "📦 Upgrading Helm charts..."
+	helm upgrade kaia-dex-core ./charts/kaia-orderbook-dex-core -f ./charts/kaia-orderbook-dex-core/values-dev.yaml -n kaia-dex
+
+.PHONY: helm-uninstall
+helm-uninstall: ## Uninstall all Helm charts
+	@echo "🗑️  Uninstalling Helm charts..."
+	helm uninstall kaia-dex-core -n kaia-dex || true
+
+# Status Commands
+.PHONY: status
+status: ## Show deployment status
+	@echo "📊 Deployment Status:"
+	@echo ""
+	@echo "Kubernetes Pods:"
+	@kubectl get pods -n kaia-dex -l app.kubernetes.io/instance=kaia-dex-core
+	@echo ""
+	@echo "Services:"
+	@kubectl get svc -n kaia-dex -l app.kubernetes.io/instance=kaia-dex-core
+	@echo ""
+	@echo "To view logs:"
+	@echo "  kubectl logs -n kaia-dex -l app.kubernetes.io/instance=kaia-dex-core"
+
+.PHONY: port-forward
+port-forward: ## Port forward to access RPC endpoint
+	@echo "🔌 Setting up port forwarding..."
+	@echo "RPC will be available at http://localhost:8547"
+	@export POD_NAME=$$(kubectl get pods --namespace kaia-dex -l "app.kubernetes.io/name=kaia-orderbook-dex-core,app.kubernetes.io/instance=kaia-dex-core" -o jsonpath="{.items[0].metadata.name}") && \
+	kubectl --namespace kaia-dex port-forward $$POD_NAME 8547:8547 8548:8548

@@ -103,6 +103,12 @@ variable "cert_manager_email" {
   type        = string
 }
 
+variable "enable_sequencer_pool" {
+  description = "Enable Arbitrum sequencer node pool"
+  type        = bool
+  default     = false
+}
+
 # ==============================================================================
 # LOCAL VALUES
 # ==============================================================================
@@ -128,6 +134,8 @@ locals {
       redis_auth_enabled     = false
       redis_tls_enabled      = false
       nginx_replicas         = 1
+      sequencer_min_nodes    = 1
+      sequencer_max_nodes    = 2
     }
     prod = {
       gke_node_count         = 3
@@ -148,6 +156,8 @@ locals {
       redis_auth_enabled     = true
       redis_tls_enabled      = true
       nginx_replicas         = 2
+      sequencer_min_nodes    = 1
+      sequencer_max_nodes    = 3
     }
   }
 
@@ -300,7 +310,9 @@ resource "google_project_iam_member" "gke_sa_roles" {
     "roles/logging.logWriter",
     "roles/monitoring.metricWriter",
     "roles/monitoring.viewer",
-    "roles/stackdriver.resourceMetadata.writer"
+    "roles/stackdriver.resourceMetadata.writer",
+    "roles/artifactregistry.reader",     # Added for pulling images from Artifact Registry
+    "roles/secretmanager.secretAccessor" # Added for accessing Secret Manager
   ])
 
   project = var.project_id
@@ -326,6 +338,24 @@ resource "google_service_account_iam_member" "external_dns_workload_identity" {
   service_account_id = google_service_account.external_dns_sa[0].name
   role               = "roles/iam.workloadIdentityUser"
   member             = "serviceAccount:${var.project_id}.svc.id.goog[external-dns/external-dns]"
+}
+
+# Service Account for cert-manager DNS-01 challenge
+resource "google_service_account" "cert_manager_sa" {
+  account_id   = "${var.environment}-cert-manager-sa"
+  display_name = "${var.environment} Cert Manager Service Account"
+}
+
+resource "google_project_iam_member" "cert_manager_dns_admin" {
+  project = var.project_id
+  role    = "roles/dns.admin"
+  member  = "serviceAccount:${google_service_account.cert_manager_sa.email}"
+}
+
+resource "google_service_account_iam_member" "cert_manager_workload_identity" {
+  service_account_id = google_service_account.cert_manager_sa.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "serviceAccount:${var.project_id}.svc.id.goog[cert-manager/cert-manager]"
 }
 
 # GKE Cluster
@@ -448,6 +478,70 @@ resource "google_container_node_pool" "primary_nodes" {
         node_pool_soak_duration = "60s"
       }
     }
+  }
+}
+
+# Arbitrum Sequencer Node Pool
+resource "google_container_node_pool" "sequencer_nodes" {
+  count      = var.enable_sequencer_pool ? 1 : 0
+  name       = "${var.environment}-sequencer-pool"
+  location   = var.region  # Use regional cluster location
+  cluster    = google_container_cluster.primary.name
+  
+  # Single zone configuration for sequencer
+  node_locations = ["${var.region}-a"]
+  node_count     = 1
+
+  autoscaling {
+    min_node_count = local.config.sequencer_min_nodes
+    max_node_count = local.config.sequencer_max_nodes
+  }
+
+  node_config {
+    preemptible  = false           # Sequencer should not be preemptible
+    machine_type = "n2-standard-4" # 4 vCPU, 16GB RAM
+
+    disk_size_gb = 200
+    disk_type    = "pd-ssd"
+
+    service_account = google_service_account.gke_sa.email
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform"
+    ]
+
+    labels = merge(local.common_labels, {
+      environment = var.environment
+      node-type   = "sequencer"
+      workload    = "arbitrum-sequencer"
+    })
+
+    # Taints to ensure only sequencer workloads run on these nodes
+    taint {
+      key    = "workload"
+      value  = "sequencer"
+      effect = "NO_SCHEDULE"
+    }
+
+    # Additional taint for prod environment
+    dynamic "taint" {
+      for_each = var.environment == "prod" ? [1] : []
+      content {
+        key    = "environment"
+        value  = "prod"
+        effect = "NO_SCHEDULE"
+      }
+    }
+  }
+
+  management {
+    auto_repair  = true
+    auto_upgrade = true  # Required for release channel
+  }
+
+  upgrade_settings {
+    max_surge       = 1
+    max_unavailable = 0
+    strategy        = "SURGE" # Always use SURGE for sequencer nodes
   }
 }
 
@@ -582,6 +676,17 @@ resource "kubernetes_namespace" "external_dns" {
   depends_on = [google_container_node_pool.primary_nodes]
 }
 
+resource "kubernetes_namespace" "sequencer" {
+  count = var.enable_sequencer_pool ? 1 : 0
+  metadata {
+    name = "arbitrum-sequencer"
+    labels = {
+      name = "arbitrum-sequencer"
+    }
+  }
+  depends_on = [google_container_node_pool.primary_nodes]
+}
+
 # Kubernetes Service Account for External DNS
 resource "kubernetes_service_account" "external_dns" {
   count = var.enable_external_dns ? 1 : 0
@@ -590,6 +695,18 @@ resource "kubernetes_service_account" "external_dns" {
     namespace = kubernetes_namespace.external_dns[0].metadata[0].name
     annotations = {
       "iam.gke.io/gcp-service-account" = google_service_account.external_dns_sa[0].email
+    }
+  }
+}
+
+# Kubernetes Service Account for Sequencer
+resource "kubernetes_service_account" "sequencer" {
+  count = var.enable_sequencer_pool ? 1 : 0
+  metadata {
+    name      = "arbitrum-sequencer"
+    namespace = kubernetes_namespace.sequencer[0].metadata[0].name
+    annotations = {
+      "iam.gke.io/gcp-service-account" = google_service_account.gke_sa.email
     }
   }
 }
@@ -676,7 +793,14 @@ resource "helm_release" "cert_manager" {
   create_namespace = false
 
   values = [yamlencode({
-    installCRDs  = true
+    installCRDs = true
+    serviceAccount = {
+      create = true
+      name   = "cert-manager"
+      annotations = {
+        "iam.gke.io/gcp-service-account" = google_service_account.cert_manager_sa.email
+      }
+    }
     nodeSelector = var.environment == "prod" ? { environment = "prod" } : {}
     tolerations = var.environment == "prod" ? [{
       key      = "environment"
@@ -726,6 +850,9 @@ resource "null_resource" "cluster_issuer" {
           - http01:
               ingress:
                 class: nginx
+          - dns01:
+              cloudDNS:
+                project: ${var.project_id}
       EOF
     EOT
   }
@@ -983,4 +1110,9 @@ output "nginx_ingress_ip" {
 output "kubectl_config_command" {
   description = "Command to configure kubectl"
   value       = "gcloud container clusters get-credentials ${google_container_cluster.primary.name} --region=${var.region} --project=${var.project_id}"
+}
+
+output "sequencer_node_pool_name" {
+  description = "Sequencer node pool name"
+  value       = var.enable_sequencer_pool ? google_container_node_pool.sequencer_nodes[0].name : null
 }
