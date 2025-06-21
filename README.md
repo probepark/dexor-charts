@@ -110,6 +110,49 @@ helm upgrade kaia-frontend charts/kaia-orderbook-dex-frontend/
 helm upgrade kaia-core charts/kaia-orderbook-dex-core/
 ```
 
+## ArgoCD Deployment
+
+### Prerequisites for ArgoCD
+
+1. **Create Repository Secret**
+
+The ArgoCD applications require Git repository access. Create the secret using the provided script:
+
+```bash
+# Generate SSH key pair (if not already exists)
+ssh-keygen -t rsa -b 4096 -f ./deploy_key -N ""
+
+# Create repository secret YAML
+./scripts/create-repository-secret.sh --ssh-key ./deploy_key
+
+# Apply the secret to your cluster
+kubectl apply -f argocd-applications/dev/repository-secret.yaml
+```
+
+The script creates two secrets:
+- Repository access secret for ArgoCD
+- SSH key secret for ArgoCD Image Updater
+
+2. **Deploy ArgoCD Applications**
+
+```bash
+# Deploy all ArgoCD applications
+kubectl apply -f argocd-applications/dev/
+```
+
+### ArgoCD Image Updater
+
+All ArgoCD applications are configured with Image Updater annotations to automatically deploy new images when pushed to the registry:
+
+- **Backend**: Tracks both API and Event service images
+- **Core**: Tracks Nitro node image
+- **Frontend**: Tracks frontend image
+
+When new images are pushed with the `dev` tag, ArgoCD Image Updater will:
+1. Detect the new image version
+2. Create a git commit in a new branch
+3. Update the application automatically
+
 ## Complete Deployment Workflow
 
 ```bash

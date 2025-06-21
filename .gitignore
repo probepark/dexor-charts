@@ -42,3 +42,6 @@ Thumbs.db
 
 # Cloned repositories
 repositories/
+argocd-applications/dev/deploy_key
+argocd-applications/dev/deploy_key.pub
+argocd-applications/dev/repository-secret.yaml
