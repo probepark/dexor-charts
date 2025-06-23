@@ -1,0 +1,14 @@
+# QA Environment Configuration
+# This file is used with the qa-infra terraform module
+# Copy this file to terraform.tfvars and fill in actual values
+
+# GCP Project Configuration
+project_id = "your-gcp-project-id"  # e.g., "orderbook-dex-dev"
+region     = "asia-northeast3"
+
+# Reference to existing dev infrastructure
+dev_network_name = "dev-vpc"         # Name of the existing dev VPC
+dev_cluster_name = "dev-gke-cluster" # Name of the existing dev GKE cluster
+
+# QA-specific configuration
+qa_namespace = "kaia-dex-qa"  # Kubernetes namespace for QA resources

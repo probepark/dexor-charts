@@ -1,0 +1,85 @@
+# QA Infrastructure Makefile Extension
+# This file contains QA-specific targets for database infrastructure
+
+.PHONY: qa-help qa-init qa-plan qa-apply qa-destroy qa-status qa-connections
+
+# QA Infrastructure Management
+qa-help: ## Show QA infrastructure help
+	@echo "$(GREEN)QA Infrastructure Commands$(NC)"
+	@echo ""
+	@echo "$(YELLOW)QA Database Infrastructure:$(NC)"
+	@echo "  $(BLUE)make qa-init$(NC)        Initialize QA infrastructure"
+	@echo "  $(BLUE)make qa-plan$(NC)        Plan QA infrastructure changes"
+	@echo "  $(BLUE)make qa-apply$(NC)       Apply QA infrastructure"
+	@echo "  $(BLUE)make qa-destroy$(NC)     Destroy QA infrastructure"
+	@echo "  $(BLUE)make qa-status$(NC)      Show QA infrastructure status"
+	@echo "  $(BLUE)make qa-connections$(NC) Show QA database connections"
+
+qa-init: ## Initialize QA infrastructure
+	@echo "$(BLUE)[INFO]$(NC) Initializing QA infrastructure..."
+	@cd terraform/qa-infra && terraform init
+
+qa-plan: qa-init ## Plan QA infrastructure changes
+	@echo "$(BLUE)[INFO]$(NC) Planning QA infrastructure..."
+	@cd terraform/qa-infra && terraform plan -var-file="../../environments/qa/terraform.tfvars"
+
+qa-apply: ## Apply QA infrastructure changes
+	@echo "$(YELLOW)[WARNING]$(NC) Deploying QA databases (MySQL and Redis)..."
+	@cd terraform/qa-infra && terraform apply -var-file="../../environments/qa/terraform.tfvars" -auto-approve
+
+qa-destroy: ## Destroy QA infrastructure
+	@echo "$(RED)[ERROR]$(NC) WARNING: This will destroy all QA databases!"
+	@echo "Type 'destroy-qa' to confirm: "
+	@read confirm && [ "$$confirm" = "destroy-qa" ] || (echo "Cancelled" && exit 1)
+	@cd terraform/qa-infra && terraform destroy -var-file="../../environments/qa/terraform.tfvars"
+
+qa-status: ## Show QA infrastructure status
+	@echo "$(BLUE)[INFO]$(NC) QA Infrastructure Status:"
+	@cd terraform/qa-infra && terraform output -json 2>/dev/null | jq -r '. | to_entries[] | "\(.key): \(.value.value)"' || echo "QA infrastructure not deployed"
+
+qa-clean: ## Clean QA terraform files
+	@echo "$(BLUE)[INFO]$(NC) Cleaning QA terraform files..."
+	@cd terraform/qa-infra && rm -rf .terraform .terraform.lock.hcl terraform.tfstate*
+
+# QA Namespace and Secrets Management
+qa-namespace-status: ## Check QA namespace and secrets
+	@echo "$(BLUE)[INFO]$(NC) Checking QA namespace..."
+	@kubectl get namespace kaia-dex-qa || echo "Namespace not found"
+	@echo ""
+	@echo "$(BLUE)[INFO]$(NC) Checking QA secrets..."
+	@kubectl get secrets -n kaia-dex-qa | grep -E "(mysql|redis)" || echo "No database secrets found"
+
+qa-mysql-password: ## Get QA MySQL password
+	@cd terraform/qa-infra && terraform output mysql_password 2>/dev/null || echo "QA infrastructure not deployed"
+
+qa-redis-password: ## Get QA Redis auth string
+	@cd terraform/qa-infra && terraform output redis_auth_string 2>/dev/null || echo "QA infrastructure not deployed"
+
+# QA Application Deployment
+qa-deploy-backend: ## Deploy backend to QA namespace
+	@echo "$(BLUE)[INFO]$(NC) Deploying backend to QA..."
+	@helm upgrade --install kaia-backend-qa charts/kaia-orderbook-dex-backend/ \
+		-f charts/kaia-orderbook-dex-backend/values-qa.yaml \
+		-n kaia-dex-qa --create-namespace
+
+qa-deploy-frontend: ## Deploy frontend to QA namespace
+	@echo "$(BLUE)[INFO]$(NC) Deploying frontend to QA..."
+	@helm upgrade --install kaia-frontend-qa charts/kaia-orderbook-dex-frontend/ \
+		-f charts/kaia-orderbook-dex-frontend/values-qa.yaml \
+		-n kaia-dex-qa --create-namespace
+
+qa-deploy-core: ## Deploy core to QA namespace
+	@echo "$(BLUE)[INFO]$(NC) Deploying core to QA..."
+	@helm upgrade --install kaia-core-qa charts/kaia-orderbook-dex-core/ \
+		-f charts/kaia-orderbook-dex-core/values-qa.yaml \
+		-n kaia-dex-qa --create-namespace
+
+qa-deploy-all: qa-deploy-backend qa-deploy-frontend qa-deploy-core ## Deploy all services to QA
+
+# QA Workflow
+qa-workflow: ## Complete QA setup workflow
+	@echo "$(BLUE)[INFO]$(NC) Starting QA workflow..."
+	@echo "1. Ensure dev environment is deployed"
+	@echo "2. Copy environments/qa/terraform.tfvars.example to terraform.tfvars"
+	@echo "3. Run 'make qa-apply' to create databases"
+	@echo "4. Run 'make qa-deploy-all' to deploy applications"

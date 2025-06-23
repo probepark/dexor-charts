@@ -1,10 +1,11 @@
-# Development environment overrides for kaia-orderbook-dex-backend
+# QA environment overrides for kaia-orderbook-dex-backend
+# Inherits most settings from dev, with QA-specific database configurations
 
 global:
   imageRegistry: "asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry"
 
-nameOverride: dev-kaia-orderbook-dex-backend
-fullnameOverride: dev-kaia-orderbook-dex-backend
+nameOverride: qa-kaia-orderbook-dex-backend
+fullnameOverride: qa-kaia-orderbook-dex-backend
 
 # API Service Configuration
 api:
@@ -12,7 +13,7 @@ api:
 
   image:
     repository: kaia-orderbook-dex-backend/api-app
-    tag: "dev"
+    tag: "qa"
 
   service:
     type: ClusterIP
@@ -22,40 +23,42 @@ api:
     wsTargetPort: 9090
 
   ingress:
-    enabled: true # Temporarily disabled due to webhook issues
+    enabled: true
     className: "nginx"
     annotations:
       cert-manager.io/cluster-issuer: "letsencrypt-dev"
       nginx.ingress.kubernetes.io/proxy-body-size: "50m"
       # CORS support
       nginx.ingress.kubernetes.io/enable-cors: "true"
-      nginx.ingress.kubernetes.io/cors-allow-origin: "https://www.dexor.trade,https://dexor.trade"
+      nginx.ingress.kubernetes.io/cors-allow-origin: "https://qa.dexor.trade"
       nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
       nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
       # WebSocket support
       nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
       nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
     hosts:
-      - host: api-dev.dexor.trade
+      - host: api-qa.dexor.trade
         paths:
           - path: /
             pathType: Prefix
     tls:
-      - secretName: api-dexor-trade-tls
+      - secretName: api-qa-dexor-trade-tls
         hosts:
-          - api-dev.dexor.trade
+          - api-qa.dexor.trade
 
   resources:
     limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
       cpu: 500m
       memory: 512Mi
-    requests:
-      cpu: 200m
-      memory: 256Mi
 
   env:
     - name: KAIA_ORDERBOOK_PHASE
-      value: "dev"
+      value: "qa"
+    - name: CONFIG_FILE
+      value: "/app/config/qa.toml"
 
 # Event Service Configuration
 event:
@@ -63,38 +66,41 @@ event:
 
   image:
     repository: kaia-orderbook-dex-backend/event-app
-    tag: "dev"
+    tag: "qa"
 
   resources:
     limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
       cpu: 500m
       memory: 512Mi
-    requests:
-      cpu: 200m
-      memory: 256Mi
 
   env:
     - name: KAIA_ORDERBOOK_PHASE
-      value: "dev"
+      value: "qa"
+    - name: CONFIG_FILE
+      value: "/app/config/qa.toml"
 
 # ServiceAccount
 serviceAccount:
   create: true
   annotations:
     iam.gke.io/gcp-service-account: "kaia-dex-backend-sa@orderbook-dex-dev.iam.gserviceaccount.com"
-  name: "kaia-dex-backend"
+  name: "kaia-dex-backend-qa"
 
 # Pod Disruption Budget
 podDisruptionBudget:
-  enabled: false  # Disable for dev environment
+  enabled: false  # Disable for QA environment
+  minAvailable: 1
 
 # Network Policy
 networkPolicy:
-  enabled: false  # Disable for dev environment
+  enabled: false  # Disable for QA environment
 
 # Monitoring
 monitoring:
-  enabled: false
+  enabled: false  # Disable until monitoring stack is installed
   serviceMonitor:
     enabled: false
     namespace: "monitoring"
@@ -102,4 +108,4 @@ monitoring:
     scrapeTimeout: 10s
 
 environment:
-    phase: "dev"
+  phase: "qa"

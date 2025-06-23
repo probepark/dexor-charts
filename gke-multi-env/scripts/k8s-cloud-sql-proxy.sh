@@ -16,21 +16,29 @@ LOCAL_PORT="${2:-3306}"
 ACTION="${3:-connect}" # connect, deploy, delete
 
 # Validate environment
-if [[ "$ENV" != "dev" && "$ENV" != "prod" ]]; then
-    echo -e "${RED}Error: Environment must be 'dev' or 'prod'${NC}"
-    echo "Usage: $0 [dev|prod] [local_port] [connect|deploy|delete]"
+if [[ "$ENV" != "dev" && "$ENV" != "prod" && "$ENV" != "qa" ]]; then
+    echo -e "${RED}Error: Environment must be 'dev', 'qa', or 'prod'${NC}"
+    echo "Usage: $0 [dev|qa|prod] [local_port] [connect|deploy|delete]"
     exit 1
 fi
 
 echo -e "${BLUE}Kubernetes Cloud SQL Proxy for ${ENV} environment${NC}"
 
 # Change to terraform directory to get outputs
-cd "$(dirname "$0")/../terraform"
-terraform workspace select "$ENV" >/dev/null 2>&1
+if [ "$ENV" == "qa" ]; then
+    cd "$(dirname "$0")/../terraform/qa-infra"
+else
+    cd "$(dirname "$0")/../terraform"
+    terraform workspace select "$ENV" >/dev/null 2>&1
+fi
 
 # Get project ID and connection name
-PROJECT_ID="orderbook-dex-${ENV}"
-CONNECTION_NAME=$(terraform output -raw database_connection_name 2>/dev/null || echo "")
+PROJECT_ID="orderbook-dex-dev"  # All environments use dev project
+if [ "$ENV" == "qa" ]; then
+    CONNECTION_NAME=$(terraform output -raw mysql_connection_name 2>/dev/null || echo "")
+else
+    CONNECTION_NAME=$(terraform output -raw database_connection_name 2>/dev/null || echo "")
+fi
 
 if [ -z "$CONNECTION_NAME" ] || [ "$CONNECTION_NAME" == "null" ]; then
     echo -e "${RED}Error: Could not get database connection name${NC}"
@@ -42,7 +50,12 @@ echo -e "${GREEN}Connection Name: $CONNECTION_NAME${NC}"
 
 # Configure kubectl
 echo -e "${YELLOW}Configuring kubectl...${NC}"
-gcloud container clusters get-credentials "${ENV}-gke-cluster" --region="asia-northeast3" --project="$PROJECT_ID"
+if [ "$ENV" == "qa" ]; then
+    # QA uses dev cluster
+    gcloud container clusters get-credentials "dev-gke-cluster" --region="asia-northeast3" --project="$PROJECT_ID"
+else
+    gcloud container clusters get-credentials "${ENV}-gke-cluster" --region="asia-northeast3" --project="$PROJECT_ID"
+fi
 
 # Function to create service account
 create_service_account() {
@@ -62,10 +75,16 @@ create_service_account() {
         --quiet
     
     # Enable workload identity binding
+    if [ "$ENV" == "qa" ]; then
+        NAMESPACE="kaia-dex-qa"
+    else
+        NAMESPACE="default"
+    fi
+    
     gcloud iam service-accounts add-iam-policy-binding \
         "cloud-sql-proxy-sa@${PROJECT_ID}.iam.gserviceaccount.com" \
         --role="roles/iam.workloadIdentityUser" \
-        --member="serviceAccount:${PROJECT_ID}.svc.id.goog[default/cloud-sql-proxy]" \
+        --member="serviceAccount:${PROJECT_ID}.svc.id.goog[${NAMESPACE}/cloud-sql-proxy]" \
         --project="$PROJECT_ID"
 }
 
@@ -76,15 +95,22 @@ deploy_proxy() {
     # Create service account first
     create_service_account
     
+    # Set namespace
+    if [ "$ENV" == "qa" ]; then
+        NAMESPACE="kaia-dex-qa"
+    else
+        NAMESPACE="default"
+    fi
+    
     # Generate YAML with actual values
     cat ../k8s/cloud-sql-proxy.yaml | \
         sed "s/\${PROJECT_ID}/$PROJECT_ID/g" | \
         sed "s/\${CONNECTION_NAME}/$CONNECTION_NAME/g" | \
-        kubectl apply -f -
+        kubectl apply -n "$NAMESPACE" -f -
     
     # Wait for deployment
     echo -e "${YELLOW}Waiting for deployment to be ready...${NC}"
-    kubectl wait --for=condition=available --timeout=60s deployment/cloud-sql-proxy
+    kubectl wait --for=condition=available --timeout=60s deployment/cloud-sql-proxy -n "$NAMESPACE"
     
     echo -e "${GREEN}Cloud SQL Proxy deployed successfully!${NC}"
 }
@@ -93,24 +119,38 @@ deploy_proxy() {
 delete_proxy() {
     echo -e "${YELLOW}Deleting Cloud SQL Proxy from Kubernetes...${NC}"
     
+    # Set namespace
+    if [ "$ENV" == "qa" ]; then
+        NAMESPACE="kaia-dex-qa"
+    else
+        NAMESPACE="default"
+    fi
+    
     cat ../k8s/cloud-sql-proxy.yaml | \
         sed "s/\${PROJECT_ID}/$PROJECT_ID/g" | \
         sed "s/\${CONNECTION_NAME}/$CONNECTION_NAME/g" | \
-        kubectl delete -f - || true
+        kubectl delete -n "$NAMESPACE" -f - || true
     
     echo -e "${GREEN}Cloud SQL Proxy deleted${NC}"
 }
 
 # Function to connect via port-forward
 connect_proxy() {
+    # Set namespace
+    if [ "$ENV" == "qa" ]; then
+        NAMESPACE="kaia-dex-qa"
+    else
+        NAMESPACE="default"
+    fi
+    
     # Check if proxy is deployed
-    if ! kubectl get deployment cloud-sql-proxy >/dev/null 2>&1; then
+    if ! kubectl get deployment cloud-sql-proxy -n "$NAMESPACE" >/dev/null 2>&1; then
         echo -e "${YELLOW}Cloud SQL Proxy not deployed. Deploying now...${NC}"
         deploy_proxy
     fi
     
     # Get pod name
-    POD_NAME=$(kubectl get pods -l app=cloud-sql-proxy -o jsonpath="{.items[0].metadata.name}")
+    POD_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=cloud-sql-proxy -o jsonpath="{.items[0].metadata.name}")
     
     if [ -z "$POD_NAME" ]; then
         echo -e "${RED}Error: Cloud SQL Proxy pod not found${NC}"
@@ -128,9 +168,15 @@ connect_proxy() {
     
     if [ -z "$DB_NAME" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ]; then
         echo -e "${YELLOW}Using default credentials...${NC}"
-        DB_NAME="dex"
-        DB_USER="klaytn"
-        DB_PASSWORD=$(kubectl get secret mysql-credentials -n default -o jsonpath="{.data.password}" 2>/dev/null | base64 -d || echo "")
+        if [ "$ENV" == "qa" ]; then
+            DB_NAME="kaia_orderbook_qa"
+            DB_USER="kaia_qa"
+            DB_PASSWORD=$(kubectl get secret mysql-qa-secret -n "$NAMESPACE" -o jsonpath="{.data.mysql-password}" 2>/dev/null | base64 -d || echo "")
+        else
+            DB_NAME="dex"
+            DB_USER="klaytn"
+            DB_PASSWORD=$(kubectl get secret mysql-credentials -n "$NAMESPACE" -o jsonpath="{.data.password}" 2>/dev/null | base64 -d || echo "")
+        fi
     fi
     
     echo -e "${GREEN}Database connection ready!${NC}"
@@ -145,7 +191,7 @@ connect_proxy() {
     echo -e "${GREEN}Press Ctrl+C to stop port-forward${NC}"
     
     # Start port-forward
-    kubectl port-forward "pod/$POD_NAME" "$LOCAL_PORT:3306"
+    kubectl port-forward -n "$NAMESPACE" "pod/$POD_NAME" "$LOCAL_PORT:3306"
 }
 
 # Main logic

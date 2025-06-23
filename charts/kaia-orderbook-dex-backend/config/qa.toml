@@ -1,0 +1,68 @@
+workspace = "qa"
+log_level = 3
+swagger = true
+cronjob = true
+datadog_agent_address = ""
+datadog_service_name = ""
+secret_manager_provider = "gcp"
+
+[server]
+api_prefix = "/api/v1"
+port = 8080
+read_timeout_in_second = 30
+read_header_timeout_in_second = 10
+idle_timeout_in_second = 60
+cors_allowed_origins = ["https://qa.dexor.trade", "https://api-qa.dexor.trade"]
+
+[ws_server]
+port = 9090
+
+[gcp]
+project_id = "orderbook-dex-dev"
+secret_name = "qa-app-config"
+
+[database]
+driver = "mysql"
+# These will be loaded from GCP Secret Manager
+ro_db_dsn = ""
+rw_db_dsn = ""
+max_idle_conns = 10
+max_open_conns = 20
+
+[redis]
+# Will be loaded from GCP Secret Manager
+host = ""
+read_timeout = 3000
+db_size = 1
+
+[auth]
+sign_alg = "HS256"
+# Will be loaded from GCP Secret Manager
+sign_key = ""
+
+[crypto]
+alg = "AES-GCM"
+# Will be loaded from GCP Secret Manager
+key = ""
+
+[udf]
+supports_search = true
+supports_group_request = false
+supports_marks = false
+supports_timescale_marks = false
+supports_time = true
+supported_resolutions = ["1", "10", "60", "1D"]
+
+[sequencer]
+api_endpoint = "http://kaia-dex-core-kaia-orderbook-dex-core-nitro:8547"
+ws_endpoint = "ws://kaia-dex-core-kaia-orderbook-dex-core-nitro:8548"
+chain_id = 412346
+
+[kaia_EN]
+api_endpoint = "https://archive-en-kairos.node.kaia.io"
+ws_endpoint = "wss://responsive-green-emerald.kaia-kairos.quiknode.pro/"
+timeout = 600000
+sequencer_inbox_address = "0xD00aEcBc56B18b559c2FE1787890A1b835e2bef5"
+
+[event]
+port = "8081"

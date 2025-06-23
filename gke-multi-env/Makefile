@@ -38,12 +38,16 @@ define log_error
 	echo "$(RED)[ERROR]$(NC) $(1)"
 endef
 
+# Include QA-specific targets
+-include Makefile-qa
+
 # Default target
 help: ## Show this help message
 	echo "$(GREEN)GKE Multi-Environment Infrastructure Makefile$(NC)"
 	echo ""
 	echo "$(YELLOW)Usage:$(NC)"
 	echo "  make [target] ENV=[dev|prod]"
+	echo "  make qa-[target]        # For QA-specific commands"
 	echo ""
 	echo "$(YELLOW)Environment Setup:$(NC)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -E '(setup|init|check)' | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(BLUE)%-20s$(NC) %s\n", $$1, $$2}'
@@ -52,7 +56,11 @@ help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -E 'dev' | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(BLUE)%-20s$(NC) %s\n", $$1, $$2}'
 	echo ""
 	echo "$(YELLOW)Production Environment:$(NC)"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -E 'prod' | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(BLUE)%-20s$(NC) %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -E 'prod' | grep -v 'prod-workflow' | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(BLUE)%-20s$(NC) %s\n", $$1, $$2}'
+	echo ""
+	echo "$(YELLOW)QA Environment:$(NC)"
+	@grep -E '^qa-[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | head -6 | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(BLUE)%-20s$(NC) %s\n", $$1, $$2}'
+	echo "  $(BLUE)...$(NC) Run 'make qa-help' for all QA commands"
 	echo ""
 	echo "$(YELLOW)Management Commands:$(NC)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -vE '(dev|prod|setup|init|check)' | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(BLUE)%-20s$(NC) %s\n", $$1, $$2}'
