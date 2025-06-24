@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: qa-kaia-orderbook-dex-backend
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # ArgoCD Image Updater configuration
+    argocd-image-updater.argoproj.io/image-list: |
+      api=asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry/kaia-orderbook-dex-backend/api-app:qa
+      event=asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry/kaia-orderbook-dex-backend/event-app:qa
+    argocd-image-updater.argoproj.io/api.update-strategy: latest
+    argocd-image-updater.argoproj.io/event.update-strategy: latest
+    argocd-image-updater.argoproj.io/api.helm.image-name: api.image.repository
+    argocd-image-updater.argoproj.io/api.helm.image-tag: api.image.tag
+    argocd-image-updater.argoproj.io/event.helm.image-name: event.image.repository
+    argocd-image-updater.argoproj.io/event.helm.image-tag: event.image.tag
+    argocd-image-updater.argoproj.io/write-back-method: git
+    argocd-image-updater.argoproj.io/git-branch: image-updater-qa-{{.SHA256}}
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:probepark/dexor-charts.git
+    targetRevision: HEAD
+    path: charts/kaia-orderbook-dex-backend
+    helm:
+      valueFiles:
+        - values-qa.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kaia-dex-qa
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

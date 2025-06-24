@@ -54,8 +54,8 @@ supports_time = true
 supported_resolutions = ["1", "10", "60", "1D"]
 
 [sequencer]
-api_endpoint = "http://kaia-dex-core-kaia-orderbook-dex-core-nitro:8547"
-ws_endpoint = "ws://kaia-dex-core-kaia-orderbook-dex-core-nitro:8548"
+api_endpoint = "http://qa-kaia-orderbook-dex-core-nitro.kaia-dex-qa:8547"
+ws_endpoint = "ws://qa-kaia-orderbook-dex-core-nitro.kaia-dex-qa:8548"
 chain_id = 412346
 
 [kaia_EN]
