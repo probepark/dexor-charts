@@ -137,7 +137,7 @@ locals {
     kaiascan_api_key = lookup(var.application_secrets, "kaiascan_api_key", "")
     auth_sign_key    = lookup(var.application_secrets, "auth_sign_key", "")
     crypto_key       = lookup(var.application_secrets, "crypto_key", "")
-    redis_host       = google_redis_instance.qa_redis.host
+    redis_host       = "${google_redis_instance.qa_redis.host}:6379"
     redis_password   = google_redis_instance.qa_redis.auth_string
   })
 }
