@@ -1032,9 +1032,39 @@ resource "helm_release" "argocd_image_updater" {
           prefix   = "docker.io"
           ping     = true
           insecure = false
+        },
+        {
+          name        = "Google Artifact Registry"
+          api_url     = "https://asia-northeast3-docker.pkg.dev"
+          prefix      = "asia-northeast3-docker.pkg.dev"
+          ping        = true
+          insecure    = false
+          credentials = "ext:/auth/auth.sh"
+          default     = true
         }
       ]
     }
+    serviceAccount = {
+      create      = true
+      annotations = var.enable_secret_manager ? {
+        "iam.gke.io/gcp-service-account" = google_service_account.artifact_registry_reader[0].email
+      } : {}
+    }
+    volumes = [
+      {
+        name = "auth-scripts"
+        configMap = {
+          name        = "argocd-image-updater-auth"
+          defaultMode = 493  # 0755 in decimal
+        }
+      }
+    ]
+    volumeMounts = [
+      {
+        name      = "auth-scripts"
+        mountPath = "/auth"
+      }
+    ]
     nodeSelector = var.environment == "prod" ? { environment = "prod" } : {}
     tolerations = var.environment == "prod" ? [{
       key      = "environment"
@@ -1044,7 +1074,10 @@ resource "helm_release" "argocd_image_updater" {
     }] : []
   })]
 
-  depends_on = [helm_release.argocd]
+  depends_on = [
+    helm_release.argocd,
+    kubernetes_config_map.argocd_image_updater_auth
+  ]
 }
 
 # ==============================================================================

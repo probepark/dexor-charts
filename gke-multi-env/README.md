@@ -257,11 +257,43 @@ make destroy-prod
    ```
 
 2. **Terraform State Lock**
+   
+   When you see an error like "Error acquiring the state lock", follow these steps:
+   
    ```bash
-   # Manually unlock if needed
-   cd terraform
-   terraform force-unlock LOCK_ID
+   # First, try to get the lock ID from the error message
+   cd gke-multi-env/terraform
+   terraform plan -var-file=../environments/dev/terraform.tfvars
+   
+   # Look for "Lock Info:" in the error output, which will show:
+   # ID:        1750835415658727  <-- This is the LOCK_ID
+   # Path:      gs://dexor-terraform-state/terraform/state/dev.tflock
+   # Operation: OperationTypeApply
+   # Who:       user@hostname
+   # Created:   2025-06-25 07:10:15.213443 +0000 UTC
+   
+   # Force unlock using the Lock ID
+   terraform force-unlock -force 1750835415658727
+   
+   # For production environment
+   terraform workspace select prod
+   terraform force-unlock -force LOCK_ID
    ```
+   
+   **Using Makefile commands:**
+   ```bash
+   # For development environment
+   make unlock-dev
+   
+   # For production environment
+   make unlock-prod
+   ```
+   
+   **Common causes of state locks:**
+   - Previous Terraform operation was interrupted
+   - Multiple users running Terraform simultaneously
+   - Network issues during apply/destroy operations
+   - Terraform process crashed unexpectedly
 
 3. **kubectl Not Working**
    ```bash

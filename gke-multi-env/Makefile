@@ -120,6 +120,37 @@ validate-prod: ## Validate Terraform configuration for prod environment
 	@cd terraform && terraform workspace select prod && terraform validate
 	$(call log_success,"Prod environment configuration is valid")
 
+# Terraform State Management
+unlock-dev: ## Force unlock Terraform state for dev environment
+	$(call log_warning,"Attempting to unlock dev environment state...")
+	@echo "First, try to get the lock ID by running: make plan-dev"
+	@echo "Then run: cd terraform && terraform force-unlock -force LOCK_ID"
+	@echo ""
+	@echo "Example:"
+	@echo "  cd terraform"
+	@echo "  terraform workspace select dev"
+	@echo "  terraform force-unlock -force 1750835415658727"
+	@echo ""
+	@echo "Press Enter to continue..." && read dummy
+	@cd terraform && terraform workspace select dev && \
+	echo "Current workspace: $$(terraform workspace show)" && \
+	echo "Run: terraform force-unlock -force LOCK_ID"
+
+unlock-prod: ## Force unlock Terraform state for prod environment
+	$(call log_warning,"Attempting to unlock prod environment state...")
+	@echo "First, try to get the lock ID by running: make plan-prod"
+	@echo "Then run: cd terraform && terraform force-unlock -force LOCK_ID"
+	@echo ""
+	@echo "Example:"
+	@echo "  cd terraform"
+	@echo "  terraform workspace select prod"
+	@echo "  terraform force-unlock -force 1750835415658727"
+	@echo ""
+	@echo "Press Enter to continue..." && read dummy
+	@cd terraform && terraform workspace select prod && \
+	echo "Current workspace: $$(terraform workspace show)" && \
+	echo "Run: terraform force-unlock -force LOCK_ID"
+
 # Deployment
 apply-dev: ## Deploy dev environment
 	$(call log_info,"Deploying dev environment...")
