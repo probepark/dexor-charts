@@ -3,12 +3,29 @@
 set -e
 
 # Kaia Orderbook DEX Core - L2 Deployment Script for Kairos Testnet
+# This script deploys the L2 contracts and automatically updates the
+# corresponding Helm chart values files (values-dev.yaml, values-qa.yaml).
+
+# --- Prequisites ---
+# 1. Docker
+# 2. gcloud CLI (for docker auth)
+# 3. yq (for updating YAML files)
+
+# Check for yq
+if ! command -v yq &> /dev/null
+then
+    echo "❌ 'yq' command not found."
+    echo "Please install it to proceed."
+    echo "  - macOS: brew install yq"
+    echo "  - Linux: sudo snap install yq or download from https://github.com/mikefarah/yq/"
+    exit 1
+fi
 
 # Check for environment argument
 ENV=${1:-dev}
-if [[ ! "$ENV" =~ ^(dev|qa|staging|production)$ ]]; then
-    echo "Usage: $0 [dev|qa|staging|production]"
-    echo "Environment '$ENV' is not valid"
+if [[ ! "$ENV" =~ ^(dev|qa)$ ]]; then
+    echo "Usage: $0 [dev|qa]"
+    echo "Environment '$ENV' is not valid. Only 'dev' or 'qa' are supported for auto-update."
     exit 1
 fi
 
@@ -28,16 +45,6 @@ case $ENV in
         OWNER_ADDRESS="${OWNER_ADDRESS:-0x74139D025E36500715DB586779D2c9Ac65da9fF1}"
         SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
         ;;
-    staging)
-        DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0x49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1}"
-        OWNER_ADDRESS="${OWNER_ADDRESS:-0x74139D025E36500715DB586779D2c9Ac65da9fF1}"
-        SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
-        ;;
-    production)
-        echo "Production deployment requires specific configuration"
-        echo "Please set DEPLOYER_PRIVKEY, OWNER_ADDRESS, and SEQUENCER_ADDRESS environment variables"
-        exit 1
-        ;;
 esac
 
 # Docker images
@@ -51,7 +58,7 @@ if [ "${USE_LOCAL:-false}" = "true" ]; then
     NITRO_NODE_IMAGE="nitro-node:latest"
 fi
 
-echo "=== Kaia Kairos Testnet L2 Deployment ==="
+echo "=== Kaia Kairos Testnet L2 Deployment for '$ENV' environment ==="
 echo "RPC URL: $KAIROS_RPC_URL"
 echo "Chain ID: $PARENT_CHAIN_ID"
 echo "Owner Address: $OWNER_ADDRESS"
@@ -75,7 +82,7 @@ echo ""
 
 # Create config directory and volume
 mkdir -p config
-CONFIG_VOLUME="kairos-deploy-config"
+CONFIG_VOLUME="kairos-deploy-config-$(date +%s)"
 docker volume create $CONFIG_VOLUME >/dev/null 2>&1 || true
 
 # Step 1: Write L2 configuration
@@ -122,130 +129,84 @@ docker run --rm \
 
 # Step 5: Copy configuration files from volume
 echo "Step 5: Copying configuration files..."
+mkdir -p ./config/$ENV
 TEMP_CONTAINER=$(docker create -v $CONFIG_VOLUME:/config alpine:latest sleep 60)
 docker start $TEMP_CONTAINER >/dev/null
 
-# Copy files with overwrite
-docker cp $TEMP_CONTAINER:/config/deployment.json ./config/ 2>/dev/null || true
-docker cp $TEMP_CONTAINER:/config/deployed_chain_info.json ./config/ 2>/dev/null || true
-docker cp $TEMP_CONTAINER:/config/l2_chain_info.json ./config/ 2>/dev/null || true
-docker cp $TEMP_CONTAINER:/config/l2_chain_config.json ./config/ 2>/dev/null || true
-
-# Check and list all directories/files to find keystore
-echo "Exploring container filesystem for keystore..."
-docker exec $TEMP_CONTAINER sh -c "find / -name '*keystore*' -type d 2>/dev/null | head -20 || true"
-docker exec $TEMP_CONTAINER sh -c "find / -name 'UTC--*' 2>/dev/null | head -20 || true"
-
-# Try common keystore locations
-for dir in /keystore /data/keystore /home/user/.ethereum/keystore /root/.ethereum/keystore; do
-    echo "Checking $dir..."
-    docker exec $TEMP_CONTAINER sh -c "ls -la $dir 2>/dev/null" && \
-    docker cp $TEMP_CONTAINER:$dir ./config/keystore 2>/dev/null && \
-    echo "✅ Copied keystore from $dir" && break || true
-done
+docker cp $TEMP_CONTAINER:/config/deployment.json ./config/$ENV/
+docker cp $TEMP_CONTAINER:/config/deployed_chain_info.json ./config/$ENV/
+docker cp $TEMP_CONTAINER:/config/l2_chain_info.json ./config/$ENV/
+docker cp $TEMP_CONTAINER:/config/l2_chain_config.json ./config/$ENV/
 
 docker stop $TEMP_CONTAINER >/dev/null 2>&1
 docker rm $TEMP_CONTAINER >/dev/null 2>&1
 
-# Step 6: Create keystore for sequencer
+# Step 6: Create keystore for sequencer (simplified)
 echo "Step 6: Creating keystore for sequencer..."
 mkdir -p ./config/$ENV/keystore
 
-# Create keystore using Nitro node
-echo "Creating keystore for address $SEQUENCER_ADDRESS..."
-docker run --rm \
-  --platform linux/amd64 \
-  -v $(pwd)/config/$ENV:/config \
-  -e PRIVATE_KEY="${DEPLOYER_PRIVKEY}" \
-  $NITRO_NODE_IMAGE \
-  --conf.file=/dev/null \
-  --node.batch-poster.parent-chain-wallet.only-create-key \
-  --node.batch-poster.parent-chain-wallet.password="passphrase" \
-  --node.batch-poster.parent-chain-wallet.pathname="/config/keystore" || echo "Note: keystore creation attempt completed"
-
-# List created keystore files
-echo "Keystore files created:"
-ls -la ./config/$ENV/keystore/ 2>/dev/null || echo "No keystore files found"
-
 # Step 7: Generate sequencer configuration
 echo "Step 7: Generating sequencer configuration..."
-if [ -f "config/$ENV/deployed_chain_info.json" ]; then
-    SEQUENCER_INBOX_ADDRESS=$(jq -r '.[0]."rollup"."sequencer-inbox"' config/$ENV/deployed_chain_info.json)
-    CHAIN_ID=$(jq -r '.[0]."chain-config"."chainId"' config/$ENV/deployed_chain_info.json)
+DEPLOYMENT_INFO_FILE="config/$ENV/deployed_chain_info.json"
 
-    cat > config/$ENV/sequencer_config.json << EOF
-{
-  "parent-chain": {
-    "connection": {
-      "url": "$KAIROS_RPC_URL"
-    }
-  },
-  "chain": {
-    "id": $CHAIN_ID,
-    "info-files": [
-      "/config/l2_chain_info.json"
-    ]
-  },
-  "node": {
-    "sequencer": true,
-    "dangerous": {
-      "no-sequencer-coordinator": true,
-      "disable-blob-reader": true
-    },
-    "delayed-sequencer": {
-      "enable": true
-    },
-    "batch-poster": {
-      "enable": true,
-      "max-delay": "30s",
-      "parent-chain-wallet": {
-        "account": "$SEQUENCER_ADDRESS",
-        "password": "passphrase",
-        "pathname": "/keystore"
-      }
-    },
-    "data-availability": {
-      "enable": false,
-      "parent-chain-node-url": "$KAIROS_RPC_URL",
-      "sequencer-inbox-address": "$SEQUENCER_INBOX_ADDRESS"
-    }
-  },
-  "execution": {
-    "sequencer": {
-      "enable": true
-    }
-  },
-  "http": {
-    "addr": "0.0.0.0",
-    "vhosts": "*",
-    "corsdomain": "*"
-  },
-  "ws": {
-    "addr": "0.0.0.0"
-  }
-}
-EOF
+if [ -f "$DEPLOYMENT_INFO_FILE" ]; then
+    SEQUENCER_INBOX_ADDRESS=$(jq -r '.[0]."rollup"."sequencer-inbox"' $DEPLOYMENT_INFO_FILE)
+    CHAIN_ID=$(jq -r '.[0]."chain-config"."chainId"' $DEPLOYMENT_INFO_FILE)
+
+    # Extract contract addresses
+    ROLLUP_ADDRESS=$(jq -r '.[0]."rollup"."rollup"' $DEPLOYMENT_INFO_FILE)
+    BRIDGE_ADDRESS=$(jq -r '.[0]."rollup"."bridge"' $DEPLOYMENT_INFO_FILE)
+    INBOX_ADDRESS=$(jq -r '.[0]."rollup"."inbox"' $DEPLOYMENT_INFO_FILE)
 
     echo ""
     echo "=== Deployment Completed! ==="
     echo ""
     echo "Environment: $ENV"
     echo "Deployed contracts:"
-    echo "- Rollup: $(jq -r '.[0]."rollup"."rollup"' config/$ENV/deployed_chain_info.json)"
-    echo "- Bridge: $(jq -r '.[0]."rollup"."bridge"' config/$ENV/deployed_chain_info.json)"
-    echo "- Inbox: $(jq -r '.[0]."rollup"."inbox"' config/$ENV/deployed_chain_info.json)"
+    echo "- Rollup:          $ROLLUP_ADDRESS"
+    echo "- Bridge:          $BRIDGE_ADDRESS"
+    echo "- Inbox:           $INBOX_ADDRESS"
     echo "- Sequencer Inbox: $SEQUENCER_INBOX_ADDRESS"
     echo ""
-    echo "Configuration files created in ./config/$ENV/"
+
+    # --- Automatic Update of Helm Values ---
+    echo "Step 8: Updating Helm values files for '$ENV' environment..."
+
+    CORE_VALUES_FILE="charts/kaia-orderbook-dex-core/values-$ENV.yaml"
+    BACKEND_VALUES_FILE="charts/kaia-orderbook-dex-backend/values-$ENV.yaml"
+
+    # Update Core values
+    if [ -f "$CORE_VALUES_FILE" ]; then
+        yq e -i ".contracts.rollup = \"$ROLLUP_ADDRESS\"" "$CORE_VALUES_FILE"
+        yq e -i ".contracts.bridge = \"$BRIDGE_ADDRESS\"" "$CORE_VALUES_FILE"
+        yq e -i ".contracts.inbox = \"$INBOX_ADDRESS\"" "$CORE_VALUES_FILE"
+        yq e -i ".contracts.sequencerInbox = \"$SEQUENCER_INBOX_ADDRESS\"" "$CORE_VALUES_FILE"
+        echo "✅ Updated $CORE_VALUES_FILE"
+    else
+        echo "⚠️  Warning: $CORE_VALUES_FILE not found. Skipping update."
+    fi
+
+    # Update Backend values
+    if [ -f "$BACKEND_VALUES_FILE" ]; then
+        yq e -i ".contracts.rollup = \"$ROLLUP_ADDRESS\"" "$BACKEND_VALUES_FILE"
+        yq e -i ".contracts.sequencerInbox = \"$SEQUENCER_INBOX_ADDRESS\"" "$BACKEND_VALUES_FILE"
+        echo "✅ Updated $BACKEND_VALUES_FILE"
+    else
+        echo "⚠️  Warning: $BACKEND_VALUES_FILE not found. Skipping update."
+    fi
+
+    echo ""
+    echo "Helm values updated successfully!"
     echo ""
     echo "Next steps:"
-    echo "1. Fund the sequencer address with KAIA tokens"
-    echo "2. Upload config files to your sequencer server"
-    echo "3. Run the sequencer with the generated configuration"
+    echo "1. Commit the updated values-$ENV.yaml files to your Git repository."
+    echo "2. ArgoCD will automatically sync the changes to the '$ENV' environment."
+
 else
-    echo "ERROR: Deployment failed - deployed_chain_info.json not found"
+    echo "❌ ERROR: Deployment failed - $DEPLOYMENT_INFO_FILE not found"
     exit 1
 fi
 
 # Clean up volume
 docker volume rm $CONFIG_VOLUME >/dev/null 2>&1 || true
+
