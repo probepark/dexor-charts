@@ -4,12 +4,41 @@ set -e
 
 # Kaia Orderbook DEX Core - L2 Deployment Script for Kairos Testnet
 
+# Check for environment argument
+ENV=${1:-dev}
+if [[ ! "$ENV" =~ ^(dev|qa|staging|production)$ ]]; then
+    echo "Usage: $0 [dev|qa|staging|production]"
+    echo "Environment '$ENV' is not valid"
+    exit 1
+fi
+
 # Configuration
 KAIROS_RPC_URL="https://archive-en-kairos.node.kaia.io"
 PARENT_CHAIN_ID=1001
-DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0x49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1}"
-OWNER_ADDRESS="${OWNER_ADDRESS:-0x74139D025E36500715DB586779D2c9Ac65da9fF1}"
-SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
+
+# Environment-specific configuration
+case $ENV in
+    dev)
+        DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0x49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1}"
+        OWNER_ADDRESS="${OWNER_ADDRESS:-0x74139D025E36500715DB586779D2c9Ac65da9fF1}"
+        SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
+        ;;
+    qa)
+        DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0x49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1}"
+        OWNER_ADDRESS="${OWNER_ADDRESS:-0x74139D025E36500715DB586779D2c9Ac65da9fF1}"
+        SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
+        ;;
+    staging)
+        DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0x49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1}"
+        OWNER_ADDRESS="${OWNER_ADDRESS:-0x74139D025E36500715DB586779D2c9Ac65da9fF1}"
+        SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
+        ;;
+    production)
+        echo "Production deployment requires specific configuration"
+        echo "Please set DEPLOYER_PRIVKEY, OWNER_ADDRESS, and SEQUENCER_ADDRESS environment variables"
+        exit 1
+        ;;
+esac
 
 # Docker images
 SCRIPTS_IMAGE="asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry/kaia-orderbook-dex-core-testnode/scripts:1.0.0"
@@ -120,31 +149,31 @@ docker rm $TEMP_CONTAINER >/dev/null 2>&1
 
 # Step 6: Create keystore for sequencer
 echo "Step 6: Creating keystore for sequencer..."
-mkdir -p ./config/keystore
+mkdir -p ./config/$ENV/keystore
 
 # Create keystore using Nitro node
 echo "Creating keystore for address $SEQUENCER_ADDRESS..."
 docker run --rm \
   --platform linux/amd64 \
-  -v $(pwd)/config:/config \
+  -v $(pwd)/config/$ENV:/config \
   -e PRIVATE_KEY="${DEPLOYER_PRIVKEY}" \
   $NITRO_NODE_IMAGE \
   --conf.file=/dev/null \
-  --node.batch-poster.wallet.only-create-key \
-  --node.batch-poster.wallet.password="passphrase" \
-  --node.batch-poster.wallet.pathname="/config/keystore" || echo "Note: keystore creation attempt completed"
+  --node.batch-poster.parent-chain-wallet.only-create-key \
+  --node.batch-poster.parent-chain-wallet.password="passphrase" \
+  --node.batch-poster.parent-chain-wallet.pathname="/config/keystore" || echo "Note: keystore creation attempt completed"
 
 # List created keystore files
 echo "Keystore files created:"
-ls -la ./config/keystore/ 2>/dev/null || echo "No keystore files found"
+ls -la ./config/$ENV/keystore/ 2>/dev/null || echo "No keystore files found"
 
 # Step 7: Generate sequencer configuration
 echo "Step 7: Generating sequencer configuration..."
-if [ -f "config/deployed_chain_info.json" ]; then
-    SEQUENCER_INBOX_ADDRESS=$(jq -r '.[0]."rollup"."sequencer-inbox"' config/deployed_chain_info.json)
-    CHAIN_ID=$(jq -r '.[0]."chain-config"."chainId"' config/deployed_chain_info.json)
+if [ -f "config/$ENV/deployed_chain_info.json" ]; then
+    SEQUENCER_INBOX_ADDRESS=$(jq -r '.[0]."rollup"."sequencer-inbox"' config/$ENV/deployed_chain_info.json)
+    CHAIN_ID=$(jq -r '.[0]."chain-config"."chainId"' config/$ENV/deployed_chain_info.json)
 
-    cat > config/sequencer_config.json << EOF
+    cat > config/$ENV/sequencer_config.json << EOF
 {
   "parent-chain": {
     "connection": {
@@ -200,13 +229,14 @@ EOF
     echo ""
     echo "=== Deployment Completed! ==="
     echo ""
+    echo "Environment: $ENV"
     echo "Deployed contracts:"
-    echo "- Rollup: $(jq -r '.[0]."rollup"."rollup"' config/deployed_chain_info.json)"
-    echo "- Bridge: $(jq -r '.[0]."rollup"."bridge"' config/deployed_chain_info.json)"
-    echo "- Inbox: $(jq -r '.[0]."rollup"."inbox"' config/deployed_chain_info.json)"
+    echo "- Rollup: $(jq -r '.[0]."rollup"."rollup"' config/$ENV/deployed_chain_info.json)"
+    echo "- Bridge: $(jq -r '.[0]."rollup"."bridge"' config/$ENV/deployed_chain_info.json)"
+    echo "- Inbox: $(jq -r '.[0]."rollup"."inbox"' config/$ENV/deployed_chain_info.json)"
     echo "- Sequencer Inbox: $SEQUENCER_INBOX_ADDRESS"
     echo ""
-    echo "Configuration files created in ./config/"
+    echo "Configuration files created in ./config/$ENV/"
     echo ""
     echo "Next steps:"
     echo "1. Fund the sequencer address with KAIA tokens"

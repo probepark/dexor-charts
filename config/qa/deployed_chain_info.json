@@ -44,8 +44,12 @@
       "deployed-at": 189180824,
       "rollup": "0x59A8f3a44BBDce8ce6DA7C8550061f79FaaEC26C",
       "native-token": "0x0000000000000000000000000000000000000000",
-      "upgrade-executor": "0x119AA4F54d3D3FBBFa621c34555FFb80e2EFf6b8",
+      "upgrade-executor": "0xB6489f2EA810bE16b99F673eB0be54914f8dC6a9",
       "validator-wallet-creator": "0xECc9462e25C54561e39fa0a33f4a13F67F00AB61",
+      "outbox": "0xa54f39Ab9C60d548bB731790101Fda788040692F",
+      "rollup-event-inbox": "0xbED8ee65DCF27B19Fa6a0c6b06d3b62b76227a72",
+      "challenge-manager": "0xA77F397Fb6d40b982FCEF796490eEF13c7909ab6",
+      "admin-proxy": "0xB6489f2EA810bE16b99F673eB0be54914f8dC6a9",
       "stake-token": "0xBA7B2F7466888ecb05Af3281687E62813f43b8E6"
     }
   }
