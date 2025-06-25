@@ -121,7 +121,24 @@ validator:
 
   nodeSelector: {}
   tolerations: []
-  affinity: {}
+  # Default Pod Anti-Affinity to prevent multiple pods on the same node
+  # This helps avoid PVC multi-attach errors for RWO volumes
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - kaia-orderbook-dex-core
+            - key: app.kubernetes.io/component
+              operator: In
+              values:
+              - nitro-node
+          topologyKey: kubernetes.io/hostname
 
 # Sequencer Configuration
 sequencer:
