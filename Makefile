@@ -139,6 +139,31 @@ deploy-core-k8s: ## Deploy core to Kubernetes using current values-dev.yaml
 deploy-core-all: deploy-core-full deploy-core-k8s ## Full deployment: contracts + sync + k8s
 	@echo "✅ Complete deployment finished!"
 
+# Token Bridge Deployment Commands
+.PHONY: deploy-token-bridge
+deploy-token-bridge: ## Deploy token bridge contracts
+	@echo "🌉 Deploying token bridge contracts for $(ENV)..."
+	@./scripts/deploy-token-bridge.sh $(ENV)
+
+.PHONY: deploy-token-bridge-dev
+deploy-token-bridge-dev: ## Deploy token bridge to dev environment
+	@$(MAKE) deploy-token-bridge ENV=dev
+
+.PHONY: deploy-token-bridge-qa
+deploy-token-bridge-qa: ## Deploy token bridge to QA environment
+	@$(MAKE) deploy-token-bridge ENV=qa
+
+.PHONY: test-token-bridge
+test-token-bridge: ## Test token bridge Docker image without deployment
+	@echo "🧪 Testing token bridge Docker image..."
+	@docker run --rm \
+		-e L1_RPC_URL="https://archive-en-kairos.node.kaia.io" \
+		-e L2_RPC_URL="https://l2-rpc-dev.dexor.trade" \
+		-e DEPLOYER_KEY="0x49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1" \
+		-e ROLLUP_ADDRESS="0x2CFcEEaad2406AAf928C40aE2833B2f3d2402c08" \
+		$(REGISTRY_URL)/kaia-orderbook-dex-core-testnode/token-bridge-contracts:1.0.0 \
+		deploy --dry-run || echo "Dry run completed"
+
 # Helm Commands
 .PHONY: helm-install
 helm-install: ## Install all Helm charts

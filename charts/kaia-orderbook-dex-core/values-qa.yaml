@@ -55,6 +55,25 @@ nitroNode:
   healthCheck:
     enabled: true
 
+  # Enable ingress for L2 RPC access
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    hosts:
+      - host: l2-rpc-qa.dexor.trade
+        paths:
+          - path: /
+            pathType: Prefix
+            port: http
+    tls:
+      - secretName: l2-rpc-qa-tls
+        hosts:
+          - l2-rpc-qa.dexor.trade
+
 # QA environment configuration
 environment:
   phase: "qa"
