@@ -487,10 +487,10 @@ resource "google_container_node_pool" "sequencer_nodes" {
   name       = "${var.environment}-sequencer-pool"
   location   = var.region  # Use regional cluster location
   cluster    = google_container_cluster.primary.name
-  
+
   # Single zone configuration for sequencer
   node_locations = ["${var.region}-a"]
-  node_count     = 1
+  node_count     = 2
 
   autoscaling {
     min_node_count = local.config.sequencer_min_nodes

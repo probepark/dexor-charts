@@ -107,12 +107,12 @@ resource "google_secret_manager_secret" "app_config" {
 # Create JSON configuration with all secrets
 locals {
   app_config_json = var.enable_secret_manager ? jsonencode({
-    rw_db_dsn        = var.enable_cloud_sql ? "mysql://${var.db_user}:${random_password.db_password[0].result}@${google_sql_database_instance.mysql[0].private_ip_address}:3306/${var.db_name}" : ""
-    ro_db_dsn        = var.enable_cloud_sql ? "mysql://${var.db_user}:${random_password.db_password[0].result}@${google_sql_database_instance.mysql[0].private_ip_address}:3306/${var.db_name}" : ""
+    rw_db_dsn        = var.enable_cloud_sql ? "${var.db_user}:${random_password.db_password[0].result}@tcp(${google_sql_database_instance.mysql[0].private_ip_address}:3306)/${var.db_name}?parseTime=true" : ""
+    ro_db_dsn        = var.enable_cloud_sql ? "${var.db_user}:${random_password.db_password[0].result}@tcp(${google_sql_database_instance.mysql[0].private_ip_address}:3306)/${var.db_name}?parseTime=true" : ""
     kaiascan_api_key = lookup(var.application_secrets, "kaiascan_api_key", "")
     auth_sign_key    = lookup(var.application_secrets, "auth_sign_key", "")
     crypto_key       = lookup(var.application_secrets, "crypto_key", "")
-    redis_host       = var.enable_redis ? google_redis_instance.redis[0].host : ""
+    redis_host       = var.enable_redis ? "${google_redis_instance.redis[0].host}:6379" : ""
     redis_password   = var.enable_redis && local.config.redis_auth_enabled ? google_redis_instance.redis[0].auth_string : ""
   }) : "{}"
 }
