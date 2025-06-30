@@ -9,7 +9,6 @@ metadata:
     # ArgoCD Image Updater configuration
     argocd-image-updater.argoproj.io/image-list: frontend=asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry/kaia-orderbook-dex-frontend:qa
     argocd-image-updater.argoproj.io/frontend.update-strategy: digest
-    argocd-image-updater.argoproj.io/pull-secret: pullsecret:kaia-dex-qa/gcr-secret
 spec:
   project: default
   source:

@@ -9,7 +9,6 @@ metadata:
     # ArgoCD Image Updater configuration
     argocd-image-updater.argoproj.io/image-list: nitro=asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry/kaia-orderbook-dex-core:dev
     argocd-image-updater.argoproj.io/nitro.update-strategy: digest
-    argocd-image-updater.argoproj.io/pull-secret: pullsecret:kaia-dex/gcr-secret
 spec:
   project: default
   source:

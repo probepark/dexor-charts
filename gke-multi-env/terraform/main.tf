@@ -1040,6 +1040,7 @@ resource "helm_release" "argocd_image_updater" {
           ping        = true
           insecure    = false
           credentials = "ext:/auth/auth.sh"
+          credsexpire = "30m"
           default     = true
         }
       ]

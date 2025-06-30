@@ -10,7 +10,6 @@ metadata:
     argocd-image-updater.argoproj.io/image-list: api=asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry/kaia-orderbook-dex-backend/api-app:dev,event=asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry/kaia-orderbook-dex-backend/event-app:dev
     argocd-image-updater.argoproj.io/api.update-strategy: digest
     argocd-image-updater.argoproj.io/event.update-strategy: digest
-    argocd-image-updater.argoproj.io/pull-secret: pullsecret:kaia-dex/gcr-secret
 spec:
   project: default
   source:

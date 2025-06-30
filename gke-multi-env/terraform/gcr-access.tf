@@ -70,7 +70,7 @@ echo "oauth2accesstoken:$TOKEN"
 # Note: The ArgoCD Image Updater registries ConfigMap is managed by Helm
 # The registry configuration is set in the Helm values in main.tf
 
-# Create a dummy secret for ArgoCD applications to reference
+# Create a dummy secret for ArgoCD applications to reference (dev namespace)
 resource "kubernetes_secret" "gcr_secret" {
   count = var.enable_secret_manager ? 1 : 0
 
@@ -82,15 +82,136 @@ resource "kubernetes_secret" "gcr_secret" {
     }
   }
 
-  type = "Opaque"
+  type = "kubernetes.io/dockerconfigjson"
 
   data = {
-    config = base64encode(jsonencode({
-      credHelpers = {
-        "asia-northeast3-docker.pkg.dev" = "gcr"
+    ".dockerconfigjson" = jsonencode({
+      auths = {
+        "asia-northeast3-docker.pkg.dev" = {
+          username = "oauth2accesstoken"
+          password = "dummy"
+          auth     = base64encode("oauth2accesstoken:dummy")
+        }
       }
-    }))
+    })
   }
 
   # No depends_on needed as the namespace should already exist
+}
+
+# Create a dummy secret for ArgoCD applications to reference (qa namespace)
+resource "kubernetes_secret" "gcr_secret_qa" {
+  count = var.enable_secret_manager ? 1 : 0
+
+  metadata {
+    name      = "gcr-secret"
+    namespace = "kaia-dex-qa"
+    labels = {
+      "app.kubernetes.io/managed-by" = "terraform"
+    }
+  }
+
+  type = "kubernetes.io/dockerconfigjson"
+
+  data = {
+    ".dockerconfigjson" = jsonencode({
+      auths = {
+        "asia-northeast3-docker.pkg.dev" = {
+          username = "oauth2accesstoken"
+          password = "dummy"
+          auth     = base64encode("oauth2accesstoken:dummy")
+        }
+      }
+    })
+  }
+
+  # No depends_on needed as the namespace should already exist
+}
+
+# Role for ArgoCD Image Updater to read secrets in kaia-dex namespace
+resource "kubernetes_role" "argocd_image_updater_secrets" {
+  count = var.enable_secret_manager ? 1 : 0
+
+  metadata {
+    name      = "argocd-image-updater-secrets"
+    namespace = "kaia-dex"
+    labels = {
+      "app.kubernetes.io/managed-by" = "terraform"
+    }
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["secrets"]
+    verbs      = ["get", "list", "watch"]
+  }
+}
+
+# RoleBinding for ArgoCD Image Updater in kaia-dex namespace
+resource "kubernetes_role_binding" "argocd_image_updater_secrets" {
+  count = var.enable_secret_manager ? 1 : 0
+
+  metadata {
+    name      = "argocd-image-updater-secrets"
+    namespace = "kaia-dex"
+    labels = {
+      "app.kubernetes.io/managed-by" = "terraform"
+    }
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = kubernetes_role.argocd_image_updater_secrets[0].metadata[0].name
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = "argocd-image-updater"
+    namespace = "argocd"
+  }
+}
+
+# Role for ArgoCD Image Updater to read secrets in kaia-dex-qa namespace
+resource "kubernetes_role" "argocd_image_updater_secrets_qa" {
+  count = var.enable_secret_manager ? 1 : 0
+
+  metadata {
+    name      = "argocd-image-updater-secrets"
+    namespace = "kaia-dex-qa"
+    labels = {
+      "app.kubernetes.io/managed-by" = "terraform"
+    }
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["secrets"]
+    verbs      = ["get", "list", "watch"]
+  }
+}
+
+# RoleBinding for ArgoCD Image Updater in kaia-dex-qa namespace
+resource "kubernetes_role_binding" "argocd_image_updater_secrets_qa" {
+  count = var.enable_secret_manager ? 1 : 0
+
+  metadata {
+    name      = "argocd-image-updater-secrets"
+    namespace = "kaia-dex-qa"
+    labels = {
+      "app.kubernetes.io/managed-by" = "terraform"
+    }
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = kubernetes_role.argocd_image_updater_secrets_qa[0].metadata[0].name
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = "argocd-image-updater"
+    namespace = "argocd"
+  }
 }
