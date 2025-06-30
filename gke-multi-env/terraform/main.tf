@@ -1076,7 +1076,7 @@ resource "helm_release" "argocd_image_updater" {
 
   depends_on = [
     helm_release.argocd,
-    kubernetes_config_map.argocd_image_updater_auth
+    kubernetes_config_map.argocd_image_updater_config
   ]
 }
 

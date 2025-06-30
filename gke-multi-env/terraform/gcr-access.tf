@@ -2,6 +2,8 @@
 # GOOGLE ARTIFACT REGISTRY ACCESS FOR ARGOCD IMAGE UPDATER
 # ==============================================================================
 
+# Note: kaia-dex namespace is expected to exist already (created by ArgoCD or manually)
+
 # Service Account for Artifact Registry access
 resource "google_service_account" "artifact_registry_reader" {
   count        = var.enable_secret_manager ? 1 : 0
@@ -27,7 +29,7 @@ resource "google_service_account_iam_member" "artifact_registry_workload_identit
 }
 
 # ConfigMap for ArgoCD Image Updater authentication script
-resource "kubernetes_config_map" "argocd_image_updater_auth" {
+resource "kubernetes_config_map" "argocd_image_updater_config" {
   count = var.enable_secret_manager ? 1 : 0
 
   metadata {
@@ -43,15 +45,52 @@ resource "kubernetes_config_map" "argocd_image_updater_auth" {
   data = {
     "auth.sh" = <<-EOT
 #!/bin/sh
-# Script to get GCP access token for ArgoCD Image Updater
-# This script is called by ArgoCD Image Updater to authenticate with Google Artifact Registry
+# This script generates docker credentials for Google Artifact Registry using Workload Identity
 
-ACCESS_TOKEN=$(wget --header 'Metadata-Flavor: Google' http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token -q -O - | grep -Eo '"access_token":.*?[^\\]",' | cut -d '"' -f 4)
-echo "oauth2accesstoken:$ACCESS_TOKEN"
+# Use IP address instead of metadata.google.internal to avoid DNS issues
+TOKEN=$(wget -qO- --header="Metadata-Flavor: Google" \
+  "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token" \
+  | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
+
+if [ -z "$TOKEN" ]; then
+  echo "Failed to get access token" >&2
+  exit 1
+fi
+
+# Return in the format expected by ArgoCD Image Updater
+echo "oauth2accesstoken:$TOKEN"
     EOT
   }
 
   depends_on = [
     kubernetes_namespace.argocd
   ]
+}
+
+# Note: The ArgoCD Image Updater registries ConfigMap is managed by Helm
+# The registry configuration is set in the Helm values in main.tf
+
+# Create a dummy secret for ArgoCD applications to reference
+resource "kubernetes_secret" "gcr_secret" {
+  count = var.enable_secret_manager ? 1 : 0
+
+  metadata {
+    name      = "gcr-secret"
+    namespace = "kaia-dex"
+    labels = {
+      "app.kubernetes.io/managed-by" = "terraform"
+    }
+  }
+
+  type = "Opaque"
+
+  data = {
+    config = base64encode(jsonencode({
+      credHelpers = {
+        "asia-northeast3-docker.pkg.dev" = "gcr"
+      }
+    }))
+  }
+
+  # No depends_on needed as the namespace should already exist
 }
