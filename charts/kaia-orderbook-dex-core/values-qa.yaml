@@ -63,16 +63,32 @@ nitroNode:
       nginx.ingress.kubernetes.io/proxy-body-size: "100m"
       nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
       nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+      cert-manager.io/cluster-issuer: "letsencrypt-qa"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      # WebSocket support
+      nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+      nginx.ingress.kubernetes.io/proxy-set-headers: |
+        Upgrade $http_upgrade;
+        Connection "upgrade";
     hosts:
       - host: l2-rpc-qa.dexor.trade
         paths:
           - path: /
             pathType: Prefix
             port: http
+      - host: l2-ws-qa.dexor.trade
+        paths:
+          - path: /
+            pathType: Prefix
+            port: ws
     tls:
       - secretName: l2-rpc-qa-tls
         hosts:
           - l2-rpc-qa.dexor.trade
+      - secretName: l2-ws-qa-tls
+        hosts:
+          - l2-ws-qa.dexor.trade
 
 # QA environment configuration
 environment:
