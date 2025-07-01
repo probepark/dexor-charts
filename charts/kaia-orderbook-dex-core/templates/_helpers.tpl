@@ -95,14 +95,12 @@ Create the name of the service account to use
 Return the proper image name for nitro node
 */}}
 {{- define "kaia-orderbook-dex-core.nitroNode.image" -}}
+{{- $registryName := .Values.nitroNode.image.registry | default .Values.global.imageRegistry -}}
 {{- $repositoryName := .Values.nitroNode.image.repository -}}
 {{- $tag := .Values.nitroNode.image.tag | default .Chart.AppVersion -}}
-{{- if contains "/" $repositoryName -}}
-{{- if contains "@" $tag -}}
-{{- printf "%s%s" $repositoryName $tag -}}
+{{- if $registryName }}
+{{- printf "%s/%s:%s" $registryName $repositoryName $tag -}}
 {{- else }}
-{{- printf "%s:%s" $repositoryName $tag -}}
-{{- end -}}
 {{- printf "%s:%s" $repositoryName $tag -}}
 {{- end }}
 {{- end }}

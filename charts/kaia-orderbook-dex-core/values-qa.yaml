@@ -1,6 +1,9 @@
 # QA environment values for kaia-orderbook-dex-core
 # Based on dev configuration with QA-specific overrides
 
+global:
+  imageRegistry: "asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry"
+
 nameOverride: qa-kaia-orderbook-dex-core
 fullnameOverride: qa-kaia-orderbook-dex-core
 
@@ -8,9 +11,8 @@ nitroNode:
   enabled: true
 
   image:
-    repository: asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry/kaia-orderbook-dex-core
+    repository: kaia-orderbook-dex-core
     tag: "qa"
-    pullPolicy: Always
 
   resources:
     limits:
