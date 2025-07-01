@@ -1,0 +1,15 @@
+{
+  "l1": {
+    "gatewayRouter": "0xa12cfceeaad2406aaf928c40ae2833b2f3d2402c",
+    "erc20Gateway": "0xa22cfceeaad2406aaf928c40ae2833b2f3d2402c",
+    "wethGateway": "0xa32cfceeaad2406aaf928c40ae2833b2f3d2402c"
+  },
+  "l2": {
+    "gatewayRouter": "0xb12cfceeaad2406aaf928c40ae2833b2f3d2402c",
+    "erc20Gateway": "0xb22cfceeaad2406aaf928c40ae2833b2f3d2402c",
+    "wethGateway": "0xb32cfceeaad2406aaf928c40ae2833b2f3d2402c"
+  },
+  "rollupAddress": "0x2CFcEEaad2406AAf928C40aE2833B2f3d2402c08",
+  "deployedAt": "2025-06-30T18:53:02Z",
+  "note": "These are mock addresses for development. Deploy actual contracts before production use."
+}

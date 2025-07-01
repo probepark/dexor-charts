@@ -45,3 +45,5 @@ repositories/
 argocd-applications/dev/deploy_key
 argocd-applications/dev/deploy_key.pub
 repository-secret.yaml
+
+keys

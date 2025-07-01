@@ -61,9 +61,16 @@ if [ ! -f "$DEPLOYMENT_INFO_FILE" ]; then
     exit 1
 fi
 
-ROLLUP_ADDRESS=$(jq -r '.[0]."rollup"."rollup"' $DEPLOYMENT_INFO_FILE)
+ROLLUP_ADDRESS=$(jq -r '.[0].rollup.rollup' $DEPLOYMENT_INFO_FILE)
+INBOX_ADDRESS=$(jq -r '.[0].inbox' $DEPLOYMENT_INFO_FILE)
+
 if [ -z "$ROLLUP_ADDRESS" ] || [ "$ROLLUP_ADDRESS" = "null" ]; then
     echo "❌ ERROR: Could not find rollup address in $DEPLOYMENT_INFO_FILE"
+    exit 1
+fi
+
+if [ -z "$INBOX_ADDRESS" ] || [ "$INBOX_ADDRESS" = "null" ]; then
+    echo "❌ ERROR: Could not find inbox address in $DEPLOYMENT_INFO_FILE"
     exit 1
 fi
 
@@ -74,23 +81,49 @@ echo "Configuration:"
 echo "- L1 RPC URL: $L1_RPC_URL"
 echo "- L2 RPC URL: $L2_RPC_URL"
 echo "- Rollup Address: $ROLLUP_ADDRESS"
+echo "- Inbox Address: $INBOX_ADDRESS"
 echo "- Token Bridge Image: $TOKEN_BRIDGE_IMAGE"
 echo ""
 
 # Create output directory for deployment results
 mkdir -p config/$ENV/token-bridge
 
+# Test L2 RPC connectivity
+echo "Testing L2 RPC connectivity..."
+if ! curl -s -X POST "$L2_RPC_URL" -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}' > /dev/null 2>&1; then
+    echo "⚠️  Warning: Cannot reach L2 RPC at $L2_RPC_URL from host"
+    echo "Trying alternative approach..."
+    
+    # Use port forwarding as fallback for dev environment
+    if [ "$ENV" = "dev" ]; then
+        echo "Setting up port forwarding to L2 RPC..."
+        kubectl port-forward -n kaia-dex svc/dev-kaia-orderbook-dex-core-nitro 8547:8547 > /tmp/port-forward.log 2>&1 &
+        PF_PID=$!
+        sleep 3
+        L2_RPC_URL="http://localhost:8547"
+        echo "Using local port forward: $L2_RPC_URL"
+    fi
+fi
+
 # Deploy token bridge
 echo "Deploying token bridge contracts..."
 DEPLOYMENT_OUTPUT=$(mktemp)
 
+# Add host networking for Docker to access external URLs
 docker run --rm \
+    --network host \
     -e L1_RPC_URL="$L1_RPC_URL" \
     -e L2_RPC_URL="$L2_RPC_URL" \
     -e DEPLOYER_KEY="$DEPLOYER_KEY" \
     -e ROLLUP_ADDRESS="$ROLLUP_ADDRESS" \
+    -e INBOX_ADDRESS="$INBOX_ADDRESS" \
     $TOKEN_BRIDGE_IMAGE \
-    deploy 2>&1 | tee $DEPLOYMENT_OUTPUT
+    run create:token-bridge 2>&1 | tee $DEPLOYMENT_OUTPUT
+
+# Clean up port forwarding if used
+if [ ! -z "$PF_PID" ]; then
+    kill $PF_PID 2>/dev/null || true
+fi
 
 # Check if deployment was successful
 if [ ${PIPESTATUS[0]} -ne 0 ]; then
@@ -148,52 +181,52 @@ echo "- ERC20 Gateway:  $L2_ERC20_GATEWAY"
 echo "- WETH Gateway:   $L2_WETH_GATEWAY"
 echo ""
 
-# Update Helm values files
-echo "Updating Helm values files..."
-
-CORE_VALUES_FILE="charts/kaia-orderbook-dex-core/values-$ENV.yaml"
-BACKEND_VALUES_FILE="charts/kaia-orderbook-dex-backend/values-$ENV.yaml"
-FRONTEND_VALUES_FILE="charts/kaia-orderbook-dex-frontend/values-$ENV.yaml"
-
-# Update Core values with token bridge addresses
-if [ -f "$CORE_VALUES_FILE" ]; then
-    # Add token bridge section if it doesn't exist
-    yq e -i '.tokenBridge = {}' "$CORE_VALUES_FILE"
-    yq e -i ".tokenBridge.l1GatewayRouter = \"$L1_GATEWAY_ROUTER\"" "$CORE_VALUES_FILE"
-    yq e -i ".tokenBridge.l1Erc20Gateway = \"$L1_ERC20_GATEWAY\"" "$CORE_VALUES_FILE"
-    yq e -i ".tokenBridge.l1WethGateway = \"$L1_WETH_GATEWAY\"" "$CORE_VALUES_FILE"
-    yq e -i ".tokenBridge.l2GatewayRouter = \"$L2_GATEWAY_ROUTER\"" "$CORE_VALUES_FILE"
-    yq e -i ".tokenBridge.l2Erc20Gateway = \"$L2_ERC20_GATEWAY\"" "$CORE_VALUES_FILE"
-    yq e -i ".tokenBridge.l2WethGateway = \"$L2_WETH_GATEWAY\"" "$CORE_VALUES_FILE"
-    echo "✅ Updated $CORE_VALUES_FILE"
-fi
-
-# Update Backend values with token bridge addresses
-if [ -f "$BACKEND_VALUES_FILE" ]; then
-    # Add token bridge section if it doesn't exist
-    yq e -i '.tokenBridge = {}' "$BACKEND_VALUES_FILE"
-    yq e -i ".tokenBridge.l1GatewayRouter = \"$L1_GATEWAY_ROUTER\"" "$BACKEND_VALUES_FILE"
-    yq e -i ".tokenBridge.l2GatewayRouter = \"$L2_GATEWAY_ROUTER\"" "$BACKEND_VALUES_FILE"
-    echo "✅ Updated $BACKEND_VALUES_FILE"
-fi
-
-# Update Frontend values with token bridge addresses
-if [ -f "$FRONTEND_VALUES_FILE" ]; then
-    # Add token bridge configuration to frontend env
-    yq e -i ".env.VITE_L1_GATEWAY_ROUTER = \"$L1_GATEWAY_ROUTER\"" "$FRONTEND_VALUES_FILE"
-    yq e -i ".env.VITE_L2_GATEWAY_ROUTER = \"$L2_GATEWAY_ROUTER\"" "$FRONTEND_VALUES_FILE"
-    echo "✅ Updated $FRONTEND_VALUES_FILE"
-fi
-
-# Clean up
-rm -f $DEPLOYMENT_OUTPUT
-
-echo ""
-echo "Next steps:"
-echo "1. Review and commit the updated values-$ENV.yaml files"
-echo "2. ArgoCD will automatically sync the changes"
-echo "3. Monitor the token bridge deployment logs"
-echo ""
-echo "To test the token bridge:"
-echo "- Use the gateway router addresses to deposit/withdraw tokens"
-echo "- Monitor bridge events in the backend event service"
+## Update Helm values files
+#echo "Updating Helm values files..."
+#
+#CORE_VALUES_FILE="charts/kaia-orderbook-dex-core/values-$ENV.yaml"
+#BACKEND_VALUES_FILE="charts/kaia-orderbook-dex-backend/values-$ENV.yaml"
+#FRONTEND_VALUES_FILE="charts/kaia-orderbook-dex-frontend/values-$ENV.yaml"
+#
+## Update Core values with token bridge addresses
+#if [ -f "$CORE_VALUES_FILE" ]; then
+#    # Add token bridge section if it doesn't exist
+#    yq e -i '.tokenBridge = {}' "$CORE_VALUES_FILE"
+#    yq e -i ".tokenBridge.l1GatewayRouter = \"$L1_GATEWAY_ROUTER\"" "$CORE_VALUES_FILE"
+#    yq e -i ".tokenBridge.l1Erc20Gateway = \"$L1_ERC20_GATEWAY\"" "$CORE_VALUES_FILE"
+#    yq e -i ".tokenBridge.l1WethGateway = \"$L1_WETH_GATEWAY\"" "$CORE_VALUES_FILE"
+#    yq e -i ".tokenBridge.l2GatewayRouter = \"$L2_GATEWAY_ROUTER\"" "$CORE_VALUES_FILE"
+#    yq e -i ".tokenBridge.l2Erc20Gateway = \"$L2_ERC20_GATEWAY\"" "$CORE_VALUES_FILE"
+#    yq e -i ".tokenBridge.l2WethGateway = \"$L2_WETH_GATEWAY\"" "$CORE_VALUES_FILE"
+#    echo "✅ Updated $CORE_VALUES_FILE"
+#fi
+#
+## Update Backend values with token bridge addresses
+#if [ -f "$BACKEND_VALUES_FILE" ]; then
+#    # Add token bridge section if it doesn't exist
+#    yq e -i '.tokenBridge = {}' "$BACKEND_VALUES_FILE"
+#    yq e -i ".tokenBridge.l1GatewayRouter = \"$L1_GATEWAY_ROUTER\"" "$BACKEND_VALUES_FILE"
+#    yq e -i ".tokenBridge.l2GatewayRouter = \"$L2_GATEWAY_ROUTER\"" "$BACKEND_VALUES_FILE"
+#    echo "✅ Updated $BACKEND_VALUES_FILE"
+#fi
+#
+## Update Frontend values with token bridge addresses
+#if [ -f "$FRONTEND_VALUES_FILE" ]; then
+#    # Add token bridge configuration to frontend env
+#    yq e -i ".env.VITE_L1_GATEWAY_ROUTER = \"$L1_GATEWAY_ROUTER\"" "$FRONTEND_VALUES_FILE"
+#    yq e -i ".env.VITE_L2_GATEWAY_ROUTER = \"$L2_GATEWAY_ROUTER\"" "$FRONTEND_VALUES_FILE"
+#    echo "✅ Updated $FRONTEND_VALUES_FILE"
+#fi
+#
+## Clean up
+#rm -f $DEPLOYMENT_OUTPUT
+#
+#echo ""
+#echo "Next steps:"
+#echo "1. Review and commit the updated values-$ENV.yaml files"
+#echo "2. ArgoCD will automatically sync the changes"
+#echo "3. Monitor the token bridge deployment logs"
+#echo ""
+#echo "To test the token bridge:"
+#echo "- Use the gateway router addresses to deposit/withdraw tokens"
+#echo "- Monitor bridge events in the backend event service"

@@ -4,14 +4,11 @@
 # Development environment values for kaia-orderbook-dex-core
 # Auto-updated by deploy-and-sync-to-k8s.sh on #오후
 
-global:
-  imageRegistry: "asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry"
-
 nitroNode:
   enabled: true
 
   image:
-    repository: kaia-orderbook-dex-core
+    repository: asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry/kaia-orderbook-dex-core
     tag: "dev"
     pullPolicy: Always
 

@@ -3,16 +3,13 @@
 # Inherit all defaults from values.yaml
 # Only override what's specific to prod environment
 
-global:
-  imageRegistry: "asia-northeast3-docker.pkg.dev/orderbook-dex-prod/prod-docker-registry"
-
 nitroNode:
   image:
     tag: "prod"
     pullPolicy: IfNotPresent
-  
+
   replicaCount: 1  # Single sequencer instance
-  
+
   resources:
     limits:
       cpu: 3500m
@@ -20,20 +17,20 @@ nitroNode:
     requests:
       cpu: 2000m
       memory: 8Gi
-  
+
   persistence:
     size: 200Gi
     storageClass: "ssd"  # Use SSD storage class
-  
+
   # Production log level
   logLevel: 3  # Info level
   pprof:
     enabled: false  # Disable profiling in production
-  
+
   # Node selector for sequencer nodes
   nodeSelector:
     workload: arbitrum-sequencer
-  
+
   # Tolerations for sequencer node taints
   tolerations:
   - key: workload
@@ -71,12 +68,6 @@ sequencer:
     maxSize: 100000
   queueSize: 1024
   maxBlockSpeed: "250ms"
-
-# Staker configuration (if needed)
-nitroNode:
-  staker:
-    enabled: false  # Enable if this node should also stake
-    interval: 50
 
 # Service configuration
 service:
