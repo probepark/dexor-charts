@@ -13,6 +13,7 @@ nitroNode:
   image:
     repository: kaia-orderbook-dex-core
     tag: "dev"
+    pullPolicy: Always
 
   resources:
     limits:
