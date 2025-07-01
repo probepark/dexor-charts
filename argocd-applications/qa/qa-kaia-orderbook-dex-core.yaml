@@ -7,8 +7,8 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
   annotations:
     # ArgoCD Image Updater configuration
-    argocd-image-updater.argoproj.io/image-list: nitroNode=asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry/kaia-orderbook-dex-core:qa
-    argocd-image-updater.argoproj.io/nitroNode.update-strategy: digest
+    argocd-image-updater.argoproj.io/image-list: core=asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry/kaia-orderbook-dex-core:qa
+    argocd-image-updater.argoproj.io/core.update-strategy: digest
 spec:
   project: default
   source:
