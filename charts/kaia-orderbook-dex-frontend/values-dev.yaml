@@ -33,6 +33,10 @@ ingress:
       paths:
         - path: /
           pathType: Prefix
+    - host: dev.dexor.trade
+      paths:
+        - path: /
+          pathType: Prefix
     - host: dexor.trade
       paths:
         - path: /
@@ -41,6 +45,7 @@ ingress:
     - secretName: dexor-trade-tls
       hosts:
         - www.dexor.trade
+        - dev.dexor.trade
         - dexor.trade
 
 resources:
