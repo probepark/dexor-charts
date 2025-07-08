@@ -156,6 +156,15 @@ if [ -f "$DEPLOYMENT_INFO_FILE" ]; then
     ROLLUP_ADDRESS=$(jq -r '.[0]."rollup"."rollup"' $DEPLOYMENT_INFO_FILE)
     BRIDGE_ADDRESS=$(jq -r '.[0]."rollup"."bridge"' $DEPLOYMENT_INFO_FILE)
     INBOX_ADDRESS=$(jq -r '.[0]."rollup"."inbox"' $DEPLOYMENT_INFO_FILE)
+    
+    # Extract additional contract addresses
+    OUTBOX_ADDRESS=$(jq -r '.[0]."rollup"."outbox" // empty' $DEPLOYMENT_INFO_FILE)
+    ROLLUP_EVENT_INBOX_ADDRESS=$(jq -r '.[0]."rollup"."rollup-event-inbox" // empty' $DEPLOYMENT_INFO_FILE)
+    CHALLENGE_MANAGER_ADDRESS=$(jq -r '.[0]."rollup"."challenge-manager" // empty' $DEPLOYMENT_INFO_FILE)
+    ADMIN_PROXY_ADDRESS=$(jq -r '.[0]."rollup"."admin-proxy" // empty' $DEPLOYMENT_INFO_FILE)
+    UPGRADE_EXECUTOR_ADDRESS=$(jq -r '.[0]."rollup"."upgrade-executor"' $DEPLOYMENT_INFO_FILE)
+    VALIDATOR_WALLET_CREATOR_ADDRESS=$(jq -r '.[0]."rollup"."validator-wallet-creator"' $DEPLOYMENT_INFO_FILE)
+    STAKE_TOKEN_ADDRESS=$(jq -r '.[0]."rollup"."stake-token"' $DEPLOYMENT_INFO_FILE)
 
     echo ""
     echo "=== Deployment Completed! ==="
@@ -170,17 +179,99 @@ if [ -f "$DEPLOYMENT_INFO_FILE" ]; then
 
     # --- Automatic Update of Helm Values ---
     echo "Step 8: Updating Helm values files for '$ENV' environment..."
+    
+    # Debug: Show extracted values
+    echo "Extracted contract addresses:"
+    echo "- Rollup:          $ROLLUP_ADDRESS"
+    echo "- Bridge:          $BRIDGE_ADDRESS"
+    echo "- Inbox:           $INBOX_ADDRESS"
+    echo "- Sequencer Inbox: $SEQUENCER_INBOX_ADDRESS"
+    echo ""
+    
+    # Validate that we have the essential addresses
+    if [ -z "$ROLLUP_ADDRESS" ] || [ "$ROLLUP_ADDRESS" = "null" ]; then
+        echo "❌ ERROR: Failed to extract rollup address from deployment info"
+        exit 1
+    fi
+    if [ -z "$SEQUENCER_INBOX_ADDRESS" ] || [ "$SEQUENCER_INBOX_ADDRESS" = "null" ]; then
+        echo "❌ ERROR: Failed to extract sequencer inbox address from deployment info"
+        exit 1
+    fi
 
     CORE_VALUES_FILE="charts/kaia-orderbook-dex-core/values-$ENV.yaml"
     BACKEND_VALUES_FILE="charts/kaia-orderbook-dex-backend/values-$ENV.yaml"
 
-    # Update Core values
+    # Update Core values - contracts are under environment key
     if [ -f "$CORE_VALUES_FILE" ]; then
-        yq e -i ".contracts.rollup = \"$ROLLUP_ADDRESS\"" "$CORE_VALUES_FILE"
-        yq e -i ".contracts.bridge = \"$BRIDGE_ADDRESS\"" "$CORE_VALUES_FILE"
-        yq e -i ".contracts.inbox = \"$INBOX_ADDRESS\"" "$CORE_VALUES_FILE"
-        yq e -i ".contracts.sequencerInbox = \"$SEQUENCER_INBOX_ADDRESS\"" "$CORE_VALUES_FILE"
+        echo "Updating Core values file..."
+        
+        # Update child chain ID
+        yq e -i ".environment.childChain.chainId = $CHAIN_ID" "$CORE_VALUES_FILE"
+        
+        # Update contract addresses
+        yq e -i ".environment.contracts.rollup = \"$ROLLUP_ADDRESS\"" "$CORE_VALUES_FILE"
+        yq e -i ".environment.contracts.bridge = \"$BRIDGE_ADDRESS\"" "$CORE_VALUES_FILE"
+        yq e -i ".environment.contracts.inbox = \"$INBOX_ADDRESS\"" "$CORE_VALUES_FILE"
+        yq e -i ".environment.contracts.sequencerInbox = \"$SEQUENCER_INBOX_ADDRESS\"" "$CORE_VALUES_FILE"
+        
+        # Update additional contracts if they exist
+        if [ -n "$OUTBOX_ADDRESS" ]; then
+            yq e -i ".environment.contracts.outbox = \"$OUTBOX_ADDRESS\"" "$CORE_VALUES_FILE"
+        fi
+        if [ -n "$ROLLUP_EVENT_INBOX_ADDRESS" ]; then
+            yq e -i ".environment.contracts.rollupEventInbox = \"$ROLLUP_EVENT_INBOX_ADDRESS\"" "$CORE_VALUES_FILE"
+        fi
+        if [ -n "$CHALLENGE_MANAGER_ADDRESS" ]; then
+            yq e -i ".environment.contracts.challengeManager = \"$CHALLENGE_MANAGER_ADDRESS\"" "$CORE_VALUES_FILE"
+        fi
+        if [ -n "$ADMIN_PROXY_ADDRESS" ]; then
+            yq e -i ".environment.contracts.adminProxy = \"$ADMIN_PROXY_ADDRESS\"" "$CORE_VALUES_FILE"
+        fi
+        yq e -i ".environment.contracts.upgradeExecutor = \"$UPGRADE_EXECUTOR_ADDRESS\"" "$CORE_VALUES_FILE"
+        yq e -i ".environment.contracts.validatorWalletCreator = \"$VALIDATOR_WALLET_CREATOR_ADDRESS\"" "$CORE_VALUES_FILE"
+        yq e -i ".environment.contracts.stakeToken = \"$STAKE_TOKEN_ADDRESS\"" "$CORE_VALUES_FILE"
+        
         echo "✅ Updated $CORE_VALUES_FILE"
+        
+        # Update config.files section with deployment JSON files
+        echo "Updating config.files section..."
+        
+        # Update l2_chain_config.json
+        if [ -f "./config/$ENV/l2_chain_config.json" ]; then
+            echo "Processing l2_chain_config.json..."
+            # Read the JSON file and format it properly
+            L2_CHAIN_CONFIG=$(cat "./config/$ENV/l2_chain_config.json" | jq .)
+            # Create a temporary file to store the formatted JSON
+            echo "$L2_CHAIN_CONFIG" > /tmp/l2_chain_config_formatted.json
+            # Use yq to update the value with proper multiline formatting
+            yq e -i ".config.files.\"l2_chain_config.json\" = load_str(\"/tmp/l2_chain_config_formatted.json\")" "$CORE_VALUES_FILE"
+            yq e -i '.config.files."l2_chain_config.json" style="literal"' "$CORE_VALUES_FILE"
+            rm -f /tmp/l2_chain_config_formatted.json
+            echo "✅ Updated l2_chain_config.json in config.files"
+        fi
+        
+        # Update l2_chain_info.json
+        if [ -f "./config/$ENV/l2_chain_info.json" ]; then
+            echo "Processing l2_chain_info.json..."
+            L2_CHAIN_INFO=$(cat "./config/$ENV/l2_chain_info.json" | jq .)
+            echo "$L2_CHAIN_INFO" > /tmp/l2_chain_info_formatted.json
+            yq e -i ".config.files.\"l2_chain_info.json\" = load_str(\"/tmp/l2_chain_info_formatted.json\")" "$CORE_VALUES_FILE"
+            yq e -i '.config.files."l2_chain_info.json" style="literal"' "$CORE_VALUES_FILE"
+            rm -f /tmp/l2_chain_info_formatted.json
+            echo "✅ Updated l2_chain_info.json in config.files"
+        fi
+        
+        # Update deployment.json
+        if [ -f "./config/$ENV/deployment.json" ]; then
+            echo "Processing deployment.json..."
+            DEPLOYMENT_JSON=$(cat "./config/$ENV/deployment.json" | jq .)
+            echo "$DEPLOYMENT_JSON" > /tmp/deployment_formatted.json
+            yq e -i ".config.files.\"deployment.json\" = load_str(\"/tmp/deployment_formatted.json\")" "$CORE_VALUES_FILE"
+            yq e -i '.config.files."deployment.json" style="literal"' "$CORE_VALUES_FILE"
+            rm -f /tmp/deployment_formatted.json
+            echo "✅ Updated deployment.json in config.files"
+        fi
+        
     else
         echo "⚠️  Warning: $CORE_VALUES_FILE not found. Skipping update."
     fi

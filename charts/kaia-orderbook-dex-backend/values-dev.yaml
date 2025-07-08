@@ -88,5 +88,5 @@ monitoring:
 environment:
   phase: "dev"
 contracts:
-  rollup: 0xE6Eebf06eE30d8f68eB71696EdEAa10878f0cf83
-  sequencerInbox: 0x519CEa2262F0D3A843a811f4ff1EDF5786636DF0
+  rollup: 0xA90678945802cD4E6E2a3c8CDfaf5480F0becC58
+  sequencerInbox: 0x5c5b1299e2dBDd04D3349229C3AE399d4eEbFAC2

@@ -87,17 +87,17 @@ environment:
     chainName: "Kaia Orderbook DEX"
   # Contract addresses from deployment (2025-06-19)
   contracts:
-    rollup: "0x2CFcEEaad2406AAf928C40aE2833B2f3d2402c08"
-    sequencerInbox: "0xD00aEcBc56B18b559c2FE1787890A1b835e2bef5"
-    bridge: "0x9962c4AE4DDbe0dC833f455A7ddF9a58C7a10e21"
-    inbox: "0x9645Aa4F29441F9b9547aD300920e9F17448B487"
+    rollup: "0xA90678945802cD4E6E2a3c8CDfaf5480F0becC58"
+    sequencerInbox: "0x5c5b1299e2dBDd04D3349229C3AE399d4eEbFAC2"
+    bridge: "0x922A0eb49ED2Ab09A31D0d0eA1480301c72EEc0A"
+    inbox: "0x22a3D2004B0C6Ec890d189F1B398Fa867A9D34B2"
     outbox: "0xeE02cdE738071A12ae4c8c44E6a1D89A3780b972" # From deployment output
     rollupEventInbox: "0x7FbCc8caCA161CD9541D7700f55D21D164E58548" # From deployment output
     challengeManager: "0x64430eD79366B010aA2D56559722095B677059FC" # From deployment output
     adminProxy: "0xbCE3833f82FbfAf93685Acb243e6ff61e5DF528D" # From deployment output
-    upgradeExecutor: "0xd9BBDDcf7c256ff5692CE010AcD12AF843F092d9" # From l2_chain_info.json
-    validatorWalletCreator: "0x86F3317DC5B3E09540c85B002c47a8DE40C542E8" # From deployment output
-    stakeToken: "0x49fA4cbebAa785E152ad865B7986EAda66C6d00b" # From l2_chain_info.json (WETH)
+    upgradeExecutor: "0x12Ff37175406659d3383B62C1a8E75971d723e77" # From l2_chain_info.json
+    validatorWalletCreator: "0xfFF56C6Fc7FF4F2844b788bDc5123F6659A4fc44" # From deployment output
+    stakeToken: "0x5Ab49B2CcA80f73C6Cd42b2886b1383C1Eb585EA" # From l2_chain_info.json (WETH)
 # Enable monitoring in dev for debugging
 monitoring:
   enabled: true
@@ -130,7 +130,34 @@ config:
   generateSequencerConfig: true
   files:
     l2_chain_config.json: |
-      {"chainId":412346,"homesteadBlock":0,"daoForkSupport":true,"eip150Block":0,"eip150Hash":"0x0000000000000000000000000000000000000000000000000000000000000000","eip155Block":0,"eip158Block":0,"byzantiumBlock":0,"constantinopleBlock":0,"petersburgBlock":0,"istanbulBlock":0,"muirGlacierBlock":0,"berlinBlock":0,"londonBlock":0,"clique":{"period":0,"epoch":0},"arbitrum":{"EnableArbOS":true,"AllowDebugPrecompiles":true,"DataAvailabilityCommittee":false,"InitialArbOSVersion":32,"InitialChainOwner":"0x74139D025E36500715DB586779D2c9Ac65da9fF1","GenesisBlockNum":0}}
+      {
+        "chainId": 412346,
+        "homesteadBlock": 0,
+        "daoForkSupport": true,
+        "eip150Block": 0,
+        "eip150Hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "eip155Block": 0,
+        "eip158Block": 0,
+        "byzantiumBlock": 0,
+        "constantinopleBlock": 0,
+        "petersburgBlock": 0,
+        "istanbulBlock": 0,
+        "muirGlacierBlock": 0,
+        "berlinBlock": 0,
+        "londonBlock": 0,
+        "clique": {
+          "period": 0,
+          "epoch": 0
+        },
+        "arbitrum": {
+          "EnableArbOS": true,
+          "AllowDebugPrecompiles": true,
+          "DataAvailabilityCommittee": false,
+          "InitialArbOSVersion": 32,
+          "InitialChainOwner": "0xf07ade7aa7dd067b6e9426a38bd538c0025bc784",
+          "GenesisBlockNum": 0
+        }
+      }
     l2_chain_info.json: |
       [
         {
@@ -167,37 +194,32 @@ config:
               "AllowDebugPrecompiles": true,
               "DataAvailabilityCommittee": false,
               "InitialArbOSVersion": 32,
-              "InitialChainOwner": "0x74139D025E36500715DB586779D2c9Ac65da9fF1",
+              "InitialChainOwner": "0xf07ade7aa7dd067b6e9426a38bd538c0025bc784",
               "GenesisBlockNum": 0
             }
           },
           "rollup": {
-            "bridge": "0x9962c4AE4DDbe0dC833f455A7ddF9a58C7a10e21",
-            "inbox": "0x9645Aa4F29441F9b9547aD300920e9F17448B487",
-            "sequencer-inbox": "0xD00aEcBc56B18b559c2FE1787890A1b835e2bef5",
-            "deployed-at": 188706184,
-            "rollup": "0x2CFcEEaad2406AAf928C40aE2833B2f3d2402c08",
+            "bridge": "0x922A0eb49ED2Ab09A31D0d0eA1480301c72EEc0A",
+            "inbox": "0x22a3D2004B0C6Ec890d189F1B398Fa867A9D34B2",
+            "sequencer-inbox": "0x5c5b1299e2dBDd04D3349229C3AE399d4eEbFAC2",
+            "deployed-at": 190324792,
+            "rollup": "0xA90678945802cD4E6E2a3c8CDfaf5480F0becC58",
             "native-token": "0x0000000000000000000000000000000000000000",
-            "upgrade-executor": "0xd9BBDDcf7c256ff5692CE010AcD12AF843F092d9",
-            "validator-wallet-creator": "0x86F3317DC5B3E09540c85B002c47a8DE40C542E8",
-            "stake-token": "0x49fA4cbebAa785E152ad865B7986EAda66C6d00b"
+            "upgrade-executor": "0x12Ff37175406659d3383B62C1a8E75971d723e77",
+            "validator-wallet-creator": "0xfFF56C6Fc7FF4F2844b788bDc5123F6659A4fc44",
+            "stake-token": "0x5Ab49B2CcA80f73C6Cd42b2886b1383C1Eb585EA"
           }
         }
       ]
     deployment.json: |
       {
-        "bridge": "0x9962c4AE4DDbe0dC833f455A7ddF9a58C7a10e21",
-        "inbox": "0x9645Aa4F29441F9b9547aD300920e9F17448B487",
-        "sequencer-inbox": "0xD00aEcBc56B18b559c2FE1787890A1b835e2bef5",
-        "deployed-at": 188706184,
-        "rollup": "0x2CFcEEaad2406AAf928C40aE2833B2f3d2402c08",
+        "bridge": "0x922A0eb49ED2Ab09A31D0d0eA1480301c72EEc0A",
+        "inbox": "0x22a3D2004B0C6Ec890d189F1B398Fa867A9D34B2",
+        "sequencer-inbox": "0x5c5b1299e2dBDd04D3349229C3AE399d4eEbFAC2",
+        "deployed-at": 190324792,
+        "rollup": "0xA90678945802cD4E6E2a3c8CDfaf5480F0becC58",
         "native-token": "0x0000000000000000000000000000000000000000",
-        "upgrade-executor": "0xd9BBDDcf7c256ff5692CE010AcD12AF843F092d9",
-        "validator-wallet-creator": "0x86F3317DC5B3E09540c85B002c47a8DE40C542E8",
-        "stake-token": "0x49fA4cbebAa785E152ad865B7986EAda66C6d00b"
+        "upgrade-executor": "0x12Ff37175406659d3383B62C1a8E75971d723e77",
+        "validator-wallet-creator": "0xfFF56C6Fc7FF4F2844b788bDc5123F6659A4fc44",
+        "stake-token": "0x5Ab49B2CcA80f73C6Cd42b2886b1383C1Eb585EA"
       }
-contracts:
-  rollup: 0xE6Eebf06eE30d8f68eB71696EdEAa10878f0cf83
-  bridge: 0x0Ae50C27f3F43aEd04d19808e73fBa9AbEF77f20
-  inbox: 0xaAb56f5A51e5EED0F41A7B865EC6e99417432D70
-  sequencerInbox: 0x519CEa2262F0D3A843a811f4ff1EDF5786636DF0
