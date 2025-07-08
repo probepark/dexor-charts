@@ -194,11 +194,22 @@ if [ -f "$DEPLOYMENT_INFO_FILE" ]; then
         echo "⚠️  Warning: $BACKEND_VALUES_FILE not found. Skipping update."
     fi
 
+    # Update Backend config TOML file
+    BACKEND_CONFIG_FILE="charts/kaia-orderbook-dex-backend/config/$ENV.toml"
+    if [ -f "$BACKEND_CONFIG_FILE" ]; then
+        # Use sed to update the sequencer_inbox_address in the [kaia_EN] section
+        sed -i.bak "s/^sequencer_inbox_address = .*/sequencer_inbox_address = \"$SEQUENCER_INBOX_ADDRESS\"/" "$BACKEND_CONFIG_FILE"
+        rm -f "${BACKEND_CONFIG_FILE}.bak"  # Remove backup file
+        echo "✅ Updated sequencer_inbox_address in $BACKEND_CONFIG_FILE"
+    else
+        echo "⚠️  Warning: $BACKEND_CONFIG_FILE not found. Skipping update."
+    fi
+
     echo ""
-    echo "Helm values updated successfully!"
+    echo "Helm values and backend config updated successfully!"
     echo ""
     echo "Next steps:"
-    echo "1. Commit the updated values-$ENV.yaml files to your Git repository."
+    echo "1. Commit the updated values-$ENV.yaml files and config/$ENV.toml to your Git repository."
     echo "2. ArgoCD will automatically sync the changes to the '$ENV' environment."
 
 else
