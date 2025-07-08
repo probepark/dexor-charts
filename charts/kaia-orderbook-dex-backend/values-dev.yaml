@@ -2,25 +2,20 @@
 
 global:
   imageRegistry: "asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry"
-
 nameOverride: dev-kaia-orderbook-dex-backend
 fullnameOverride: dev-kaia-orderbook-dex-backend
-
 # API Service Configuration
 api:
   replicaCount: 1
-
   image:
     repository: kaia-orderbook-dex-backend/api-app
     tag: "dev"
-
   service:
     type: ClusterIP
     port: 8080
     targetPort: 8080
     wsPort: 9090
     wsTargetPort: 9090
-
   ingress:
     enabled: true # Temporarily disabled due to webhook issues
     className: "nginx"
@@ -44,7 +39,6 @@ api:
       - secretName: api-dexor-trade-tls
         hosts:
           - api-dev.dexor.trade
-
   resources:
     limits:
       cpu: 500m
@@ -52,19 +46,15 @@ api:
     requests:
       cpu: 200m
       memory: 256Mi
-
   env:
     - name: KAIA_ORDERBOOK_PHASE
       value: "dev"
-
 # Event Service Configuration
 event:
   replicaCount: 1
-
   image:
     repository: kaia-orderbook-dex-backend/event-app
     tag: "dev"
-
   resources:
     limits:
       cpu: 500m
@@ -72,26 +62,21 @@ event:
     requests:
       cpu: 200m
       memory: 256Mi
-
   env:
     - name: KAIA_ORDERBOOK_PHASE
       value: "dev"
-
 # ServiceAccount
 serviceAccount:
   create: true
   annotations:
     iam.gke.io/gcp-service-account: "kaia-dex-backend-sa@orderbook-dex-dev.iam.gserviceaccount.com"
   name: "kaia-dex-backend"
-
 # Pod Disruption Budget
 podDisruptionBudget:
-  enabled: false  # Disable for dev environment
-
+  enabled: false # Disable for dev environment
 # Network Policy
 networkPolicy:
-  enabled: false  # Disable for dev environment
-
+  enabled: false # Disable for dev environment
 # Monitoring
 monitoring:
   enabled: false
@@ -100,6 +85,8 @@ monitoring:
     namespace: "monitoring"
     interval: 30s
     scrapeTimeout: 10s
-
 environment:
-    phase: "dev"
+  phase: "dev"
+contracts:
+  rollup: 0xE6Eebf06eE30d8f68eB71696EdEAa10878f0cf83
+  sequencerInbox: 0x519CEa2262F0D3A843a811f4ff1EDF5786636DF0

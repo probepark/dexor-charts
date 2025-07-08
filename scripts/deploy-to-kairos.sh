@@ -37,12 +37,12 @@ PARENT_CHAIN_ID=1001
 case $ENV in
     dev)
         DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0x49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1}"
-        OWNER_ADDRESS="${OWNER_ADDRESS:-0x74139D025E36500715DB586779D2c9Ac65da9fF1}"
+        OWNER_ADDRESS="${OWNER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
         SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
         ;;
     qa)
         DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0x49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1}"
-        OWNER_ADDRESS="${OWNER_ADDRESS:-0x74139D025E36500715DB586779D2c9Ac65da9fF1}"
+        OWNER_ADDRESS="${OWNER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
         SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
         ;;
 esac
@@ -54,7 +54,6 @@ NITRO_NODE_IMAGE="asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-re
 
 # Use local images if USE_LOCAL is set
 if [ "${USE_LOCAL:-false}" = "true" ]; then
-    SCRIPTS_IMAGE="kaia-orderbook-dex-core-testnode-scripts:latest"
     NITRO_NODE_IMAGE="nitro-node:latest"
 fi
 
@@ -73,7 +72,7 @@ if [ "${USE_LOCAL:-false}" != "true" ]; then
     echo "- Pulling rollupcreator image..."
     docker pull $ROLLUPCREATOR_IMAGE || { echo "Failed to pull rollupcreator image"; exit 1; }
     echo "- Pulling nitro node image..."
-    docker pull $NITRO_NODE_IMAGE || { echo "Failed to pull nitro node image"; exit 1; }
+    docker pull --platform linux/amd64 $NITRO_NODE_IMAGE || { echo "Failed to pull nitro node image"; exit 1; }
     echo "Images pulled successfully!"
 else
     echo "Using local images (USE_LOCAL=true)"

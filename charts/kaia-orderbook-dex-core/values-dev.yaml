@@ -3,18 +3,14 @@
 
 global:
   imageRegistry: "asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry"
-
 nameOverride: dev-kaia-orderbook-dex-core
 fullnameOverride: dev-kaia-orderbook-dex-core
-
 nitroNode:
   enabled: true
-
   image:
     repository: kaia-orderbook-dex-core
     tag: "dev"
     pullPolicy: Always
-
   resources:
     limits:
       cpu: 4000m
@@ -22,39 +18,29 @@ nitroNode:
     requests:
       cpu: 2000m
       memory: 8Gi
-
   persistence:
-    size: 200Gi  # Increased for sequencer mode
-
+    size: 200Gi # Increased for sequencer mode
   # Node selector and tolerations for sequencer pool
   nodeSelector:
     workload: "arbitrum-sequencer"
     node-type: "sequencer"
-
   tolerations:
     - key: "workload"
       operator: "Equal"
       value: "sequencer"
       effect: "NoSchedule"
-
   # Sequencer mode - args will be generated from template
   args: []
-
   # Enable config file for sequencer mode
   configFile: "/config/sequencer_config.json"
-
   # Persistent chain path
   persistentChain: "/data"
-
   # WASM module root from deployment
   wasmModuleRoot: "0x184884e1eb9fefdc158f6c8ac912bb183bf3cf83f0090317e0bc4ac5860baa39"
-
   logLevel: 5
-
   # Enable health check for sequencer mode
   healthCheck:
     enabled: true
-
   # Enable ingress for L2 RPC access
   ingress:
     enabled: true
@@ -89,39 +75,34 @@ nitroNode:
       - secretName: l2-ws-dev-tls
         hosts:
           - l2-ws-dev.dexor.trade
-
 # Development environment configuration
 environment:
   phase: "dev"
   parentChain:
-    chainId: 1001  # Kaia Kairos testnet
+    chainId: 1001 # Kaia Kairos testnet
     rpcUrl: "https://archive-en-kairos.node.kaia.io"
-
   # Child chain configuration from deployment
   childChain:
     chainId: 412346
     chainName: "Kaia Orderbook DEX"
-
   # Contract addresses from deployment (2025-06-19)
   contracts:
     rollup: "0x2CFcEEaad2406AAf928C40aE2833B2f3d2402c08"
     sequencerInbox: "0xD00aEcBc56B18b559c2FE1787890A1b835e2bef5"
     bridge: "0x9962c4AE4DDbe0dC833f455A7ddF9a58C7a10e21"
     inbox: "0x9645Aa4F29441F9b9547aD300920e9F17448B487"
-    outbox: "0xeE02cdE738071A12ae4c8c44E6a1D89A3780b972"  # From deployment output
-    rollupEventInbox: "0x7FbCc8caCA161CD9541D7700f55D21D164E58548"  # From deployment output
-    challengeManager: "0x64430eD79366B010aA2D56559722095B677059FC"  # From deployment output
-    adminProxy: "0xbCE3833f82FbfAf93685Acb243e6ff61e5DF528D"  # From deployment output
-    upgradeExecutor: "0xd9BBDDcf7c256ff5692CE010AcD12AF843F092d9"  # From l2_chain_info.json
-    validatorWalletCreator: "0x86F3317DC5B3E09540c85B002c47a8DE40C542E8"  # From deployment output
-    stakeToken: "0x49fA4cbebAa785E152ad865B7986EAda66C6d00b"  # From l2_chain_info.json (WETH)
-
+    outbox: "0xeE02cdE738071A12ae4c8c44E6a1D89A3780b972" # From deployment output
+    rollupEventInbox: "0x7FbCc8caCA161CD9541D7700f55D21D164E58548" # From deployment output
+    challengeManager: "0x64430eD79366B010aA2D56559722095B677059FC" # From deployment output
+    adminProxy: "0xbCE3833f82FbfAf93685Acb243e6ff61e5DF528D" # From deployment output
+    upgradeExecutor: "0xd9BBDDcf7c256ff5692CE010AcD12AF843F092d9" # From l2_chain_info.json
+    validatorWalletCreator: "0x86F3317DC5B3E09540c85B002c47a8DE40C542E8" # From deployment output
+    stakeToken: "0x49fA4cbebAa785E152ad865B7986EAda66C6d00b" # From l2_chain_info.json (WETH)
 # Enable monitoring in dev for debugging
 monitoring:
   enabled: true
   prometheus:
     port: 6060
-
 # Enable sequencer features
 sequencer:
   enabled: true
@@ -129,23 +110,21 @@ sequencer:
   queueSize: 4096
   maxBlockSpeed: "250ms"
   redis:
-    enabled: false  # Single sequencer in dev
+    enabled: false # Single sequencer in dev
   batchPoster:
     enabled: false # Enable batch posting with private key
     maxDelay: "30s"
-    compressionLevel: 6  # 0-9, where 6 is a good balance
+    compressionLevel: 6 # 0-9, where 6 is a good balance
     parentChainWallet:
       privateKey: "49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1"
   dataAvailability:
-    enabled: false  # Onchain DA for dev
-
+    enabled: false # Onchain DA for dev
 # Nitro specific configuration
 nitroConfig:
   feed:
     output:
       enable: true
       port: 9642
-
 # Configuration files for sequencer mode
 config:
   generateSequencerConfig: true
@@ -217,3 +196,8 @@ config:
         "validator-wallet-creator": "0x86F3317DC5B3E09540c85B002c47a8DE40C542E8",
         "stake-token": "0x49fA4cbebAa785E152ad865B7986EAda66C6d00b"
       }
+contracts:
+  rollup: 0xE6Eebf06eE30d8f68eB71696EdEAa10878f0cf83
+  bridge: 0x0Ae50C27f3F43aEd04d19808e73fBa9AbEF77f20
+  inbox: 0xaAb56f5A51e5EED0F41A7B865EC6e99417432D70
+  sequencerInbox: 0x519CEa2262F0D3A843a811f4ff1EDF5786636DF0
