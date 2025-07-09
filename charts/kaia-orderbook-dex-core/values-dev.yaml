@@ -80,7 +80,7 @@ environment:
   phase: "dev"
   parentChain:
     chainId: 1001 # Kaia Kairos testnet
-    rpcUrl: "https://archive-en-kairos.node.kaia.io"
+    rpcUrl: "http://34.64.142.1:8551"
   # Child chain configuration from deployment
   childChain:
     chainId: 412346
