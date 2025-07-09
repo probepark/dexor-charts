@@ -86,6 +86,8 @@ spec:
             - "--node.batch-poster.data-poster.max-mempool-transactions=0"
             - "--node.batch-poster.data-poster.max-mempool-weight=0"
             - "--node.batch-poster.data-poster.max-queued-transactions=0"
+            - "--node.batch-poster.data-poster.target-price-gwei=50"
+            - "--node.batch-poster.data-poster.urgency-gwei=100"
             - "--node.batch-poster.max-delay={{ .Values.sequencer.batchPoster.maxDelay }}"
             - "--node.batch-poster.compression-level={{ .Values.sequencer.batchPoster.compressionLevel | default 6 }}"
             {{- end }}
