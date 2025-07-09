@@ -37,7 +37,7 @@ nitroNode:
   persistentChain: "/data"
   # WASM module root from deployment
   wasmModuleRoot: "0x184884e1eb9fefdc158f6c8ac912bb183bf3cf83f0090317e0bc4ac5860baa39"
-  logLevel: 5
+  logLevel: 3
   # Enable health check for sequencer mode
   healthCheck:
     enabled: true
@@ -112,7 +112,7 @@ sequencer:
   redis:
     enabled: false # Single sequencer in dev
   batchPoster:
-    enabled: false # Enable batch posting with private key
+    enabled: true # Enable batch posting with private key
     maxDelay: "30s"
     compressionLevel: 6 # 0-9, where 6 is a good balance
     parentChainWallet:
