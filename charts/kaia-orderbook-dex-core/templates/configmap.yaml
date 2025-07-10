@@ -35,7 +35,6 @@ data:
         "batch-poster": {
           "enable": {{ .Values.sequencer.batchPoster.enabled }},
           "delay-bufferable": false,
-          "l1-block-bound": "ignore",
           "max-delay": {{ .Values.sequencer.batchPoster.maxDelay | quote }},
           "compression-level": {{ .Values.sequencer.batchPoster.compressionLevel | default 6 }},
           {{- if .Values.sequencer.batchPoster.parentChainWallet }}
