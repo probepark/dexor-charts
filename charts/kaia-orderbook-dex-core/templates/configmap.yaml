@@ -34,15 +34,11 @@ data:
         },
         "batch-poster": {
           "enable": {{ .Values.sequencer.batchPoster.enabled }},
-          "delay-bufferable": false,
           "max-delay": {{ .Values.sequencer.batchPoster.maxDelay | quote }},
           "compression-level": {{ .Values.sequencer.batchPoster.compressionLevel | default 6 }},
           {{- if .Values.sequencer.batchPoster.parentChainWallet }}
           "parent-chain-wallet": {
             "private-key": {{ .Values.sequencer.batchPoster.parentChainWallet.privateKey | quote }}
-          },
-          "data-poster": {
-            "wait-for-l1-finality": false
           }
           {{- end }}
         },
