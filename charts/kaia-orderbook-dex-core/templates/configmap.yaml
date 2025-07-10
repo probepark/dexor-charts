@@ -58,7 +58,7 @@ data:
         {{- end }}
       },
       "execution": {
-        "forwarding-target": "",
+        "forwarding-target": "null",
         "sequencer": {
           "enable": {{ .Values.sequencer.enabled }}
         }
