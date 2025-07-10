@@ -169,6 +169,9 @@ sequencer:
     enabled: false
     mode: "onchain"  # onchain, anytrust, or celestia
 
+  gasCap: "150000000"
+  txFeeCap: "10"
+
 # Environment Configuration
 environment:
   phase: "dev"

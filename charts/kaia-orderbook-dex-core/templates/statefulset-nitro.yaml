@@ -48,6 +48,8 @@ spec:
             {{- if .Values.sequencer.enabled }}
             - "--node.sequencer"
             - "--execution.sequencer.enable"
+            - "--execution.rpc.gas-cap={{ .Values.sequencer.gasCap }}"
+            - "--execution.rpc.tx-fee-cap={{ .Values.sequencer.txFeeCap }}"
             {{- if .Values.sequencer.redis.enabled }}
             - "--node.seq-coordinator.enable"
             - "--node.seq-coordinator.redis-url={{ .Values.sequencer.redis.url }}"
