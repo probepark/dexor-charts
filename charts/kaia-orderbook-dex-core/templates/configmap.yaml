@@ -43,8 +43,7 @@ data:
             "private-key": {{ .Values.sequencer.batchPoster.parentChainWallet.privateKey | quote }}
           },
           "data-poster": {
-            "wait-for-l1-finality": false,
-            "allocate-mempool-balance": false
+            "wait-for-l1-finality": false
           }
           {{- end }}
         },
