@@ -26,18 +26,25 @@ data:
         {{- if .Values.sequencer.enabled }}
         "dangerous": {
           "no-sequencer-coordinator": {{ not .Values.sequencer.redis.enabled }},
-          "disable-blob-reader": true
+          "disable-blob-reader": true,
+          "no-l1-listener": false
         },
         "delayed-sequencer": {
           "enable": true
         },
         "batch-poster": {
           "enable": {{ .Values.sequencer.batchPoster.enabled }},
+          "delay-bufferable": false,
+          "l1-block-bound": "ignore",
           "max-delay": {{ .Values.sequencer.batchPoster.maxDelay | quote }},
           "compression-level": {{ .Values.sequencer.batchPoster.compressionLevel | default 6 }},
           {{- if .Values.sequencer.batchPoster.parentChainWallet }}
           "parent-chain-wallet": {
             "private-key": {{ .Values.sequencer.batchPoster.parentChainWallet.privateKey | quote }}
+          },
+          "data-poster": {
+            "wait-for-l1-finality": false,
+            "allocate-mempool-balance": false
           }
           {{- end }}
         },
@@ -51,6 +58,7 @@ data:
         {{- end }}
       },
       "execution": {
+        "forwarding-target": "",
         "sequencer": {
           "enable": {{ .Values.sequencer.enabled }}
         }
