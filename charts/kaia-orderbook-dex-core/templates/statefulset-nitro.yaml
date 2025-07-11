@@ -85,9 +85,6 @@ spec:
             {{- end }}
             {{- if .Values.sequencer.batchPoster.enabled }}
             - "--node.batch-poster.enable=true"
-            - "--node.batch-poster.data-poster.max-mempool-transactions=1"
-            - "--node.batch-poster.data-poster.max-mempool-weight=18"
-            - "--node.batch-poster.data-poster.max-queued-transactions=0"
             - "--node.batch-poster.max-delay={{ .Values.sequencer.batchPoster.maxDelay }}"
             - "--node.batch-poster.compression-level={{ .Values.sequencer.batchPoster.compressionLevel | default 6 }}"
             {{- end }}

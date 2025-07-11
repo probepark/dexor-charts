@@ -68,7 +68,7 @@ nitroNode:
   wasmModuleRoot: ""
 
   # HTTP API configuration
-  httpApi: "net,web3,eth,txpool,debug"
+  httpApi: "net,web3,eth,txpool,debug,arb"
 
   # Log level (0-5, where 3 is info)
   logLevel: 3
