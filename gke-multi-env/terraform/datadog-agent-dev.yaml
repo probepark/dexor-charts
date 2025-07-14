@@ -19,7 +19,7 @@ spec:
       enabled: false
     logCollection:
       enabled: true
-      containerCollectAll: false
+      containerCollectAll: true
     liveProcessCollection:
       enabled: false
     liveContainerCollection:
