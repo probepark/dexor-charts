@@ -49,6 +49,9 @@ Selector labels
 {{- define "kaia-orderbook-dex-frontend.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "kaia-orderbook-dex-frontend.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
+{{- with .Values.commonLabels }}
+{{ toYaml . }}
+{{- end }}
 {{- end }}
 
 {{/*
