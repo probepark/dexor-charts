@@ -14,7 +14,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "kaia-orderbook-dex-frontend.podLabels" . | nindent 8 }}
+        {{- include "kaia-orderbook-dex-frontend.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.global.imagePullSecrets }}
       imagePullSecrets:

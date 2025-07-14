@@ -6,10 +6,6 @@ global:
   imageRegistry: ""
   imagePullSecrets: []
 
-# Common labels for all resources
-commonLabels:
-  datadog-logs-enabled: "true"
-
 replicaCount: 2
 
 image:

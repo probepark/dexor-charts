@@ -7,10 +7,6 @@ global:
   imagePullSecrets: []
   storageClass: ""
 
-# Common labels for all resources
-commonLabels:
-  datadog-logs-enabled: "true"
-
 # API Service Configuration
 api:
   enabled: true

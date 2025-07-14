@@ -38,9 +38,6 @@ helm.sh/chart: {{ include "kaia-orderbook-dex-core.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{- with .Values.commonLabels }}
-{{ toYaml . }}
-{{- end }}
 {{- end }}
 
 {{/*
@@ -88,9 +85,6 @@ Pod labels for Nitro Node
 */}}
 {{- define "kaia-orderbook-dex-core.nitroNode.podLabels" -}}
 {{ include "kaia-orderbook-dex-core.nitroNode.selectorLabels" . }}
-{{- with .Values.commonLabels }}
-{{ toYaml . }}
-{{- end }}
 {{- end }}
 
 {{/*
@@ -98,9 +92,6 @@ Pod labels for Validator
 */}}
 {{- define "kaia-orderbook-dex-core.validator.podLabels" -}}
 {{ include "kaia-orderbook-dex-core.validator.selectorLabels" . }}
-{{- with .Values.commonLabels }}
-{{ toYaml . }}
-{{- end }}
 {{- end }}
 
 {{/*

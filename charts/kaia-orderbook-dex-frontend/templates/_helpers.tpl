@@ -38,9 +38,6 @@ helm.sh/chart: {{ include "kaia-orderbook-dex-frontend.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{- with .Values.commonLabels }}
-{{ toYaml . }}
-{{- end }}
 {{- end }}
 
 {{/*
@@ -56,9 +53,6 @@ Pod labels
 */}}
 {{- define "kaia-orderbook-dex-frontend.podLabels" -}}
 {{ include "kaia-orderbook-dex-frontend.selectorLabels" . }}
-{{- with .Values.commonLabels }}
-{{ toYaml . }}
-{{- end }}
 {{- end }}
 
 {{/*

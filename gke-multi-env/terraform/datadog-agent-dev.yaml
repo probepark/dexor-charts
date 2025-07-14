@@ -20,7 +20,6 @@ spec:
     logCollection:
       enabled: true
       containerCollectAll: false
-      containerCollectUsingFiles: true
     liveProcessCollection:
       enabled: false
     liveContainerCollection:
@@ -35,17 +34,18 @@ spec:
       enabled: false
   override:
     nodeAgent:
+      tolerations:
+        - key: workload
+          operator: Equal
+          value: sequencer
+          effect: NoSchedule
       env:
-        - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
-          value: "false"
-        - name: DD_LOGS_CONFIG_K8S_CONTAINER_USE_FILE
-          value: "true"
         - name: DD_LOGS_CONFIG_AUTO_MULTI_LINE_DETECTION
           value: "true"
-        - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_USING_LABELS
-          value: "true"
-        - name: DD_CONTAINER_INCLUDE_LABELS
-          value: "datadog-logs-enabled=true"
+        - name: DD_CONTAINER_EXCLUDE
+          value: "image:.*"
+        - name: DD_CONTAINER_INCLUDE
+          value: "image:asia-northeast3-docker.pkg.dev/orderbook-dex-dev/.*"
       containers:
         agent:
           resources:

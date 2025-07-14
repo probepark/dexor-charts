@@ -38,9 +38,6 @@ helm.sh/chart: {{ include "kaia-orderbook-dex-backend.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{- with .Values.commonLabels }}
-{{ toYaml . }}
-{{- end }}
 {{- end }}
 
 {{/*
@@ -88,9 +85,6 @@ Pod labels for API
 */}}
 {{- define "kaia-orderbook-dex-backend.api.podLabels" -}}
 {{ include "kaia-orderbook-dex-backend.api.selectorLabels" . }}
-{{- with .Values.commonLabels }}
-{{ toYaml . }}
-{{- end }}
 {{- end }}
 
 {{/*
@@ -98,9 +92,6 @@ Pod labels for Event
 */}}
 {{- define "kaia-orderbook-dex-backend.event.podLabels" -}}
 {{ include "kaia-orderbook-dex-backend.event.selectorLabels" . }}
-{{- with .Values.commonLabels }}
-{{ toYaml . }}
-{{- end }}
 {{- end }}
 
 {{/*
