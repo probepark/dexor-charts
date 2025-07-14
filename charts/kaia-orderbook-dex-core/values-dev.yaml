@@ -42,6 +42,12 @@ nitroNode:
   healthCheck:
     enabled: true
   env:
+    - name: DD_AGENT_HOST
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: DD_SERVICE
+      value: "kaia-orderbook-dex-core"
     - name: DD_ENV
       value: "dev"
   # Enable ingress for L2 RPC access

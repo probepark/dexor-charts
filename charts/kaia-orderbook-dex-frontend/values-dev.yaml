@@ -60,6 +60,12 @@ autoscaling:
   enabled: false
 
 env:
+  - name: DD_AGENT_HOST
+    valueFrom:
+      fieldRef:
+        fieldPath: status.hostIP
+  - name: DD_SERVICE
+    value: "kaia-orderbook-dex-frontend"
   - name: DD_ENV
     value: "dev"
 

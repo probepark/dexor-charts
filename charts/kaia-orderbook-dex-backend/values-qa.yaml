@@ -59,6 +59,12 @@ api:
       value: "qa"
     - name: CONFIG_FILE
       value: "/app/config/qa.toml"
+    - name: DD_AGENT_HOST
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: DD_SERVICE
+      value: "kaia-orderbook-api"
     - name: DD_ENV
       value: "qa"
 # Event Service Configuration
@@ -82,6 +88,12 @@ event:
       value: "qa"
     - name: CONFIG_FILE
       value: "/app/config/qa.toml"
+    - name: DD_AGENT_HOST
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: DD_SERVICE
+      value: "kaia-orderbook-api"
     - name: DD_ENV
       value: "qa"
 

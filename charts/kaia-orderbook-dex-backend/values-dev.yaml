@@ -51,6 +51,12 @@ api:
       value: "dev"
     - name: CONFIG_FILE
       value: "/app/config/dev.toml"
+    - name: DD_AGENT_HOST
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: DD_SERVICE
+      value: "kaia-orderbook-api"
     - name: DD_ENV
       value: "dev"
 # Event Service Configuration
@@ -71,6 +77,12 @@ event:
       value: "dev"
     - name: CONFIG_FILE
       value: "/app/config/dev.toml"
+    - name: DD_AGENT_HOST
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: DD_SERVICE
+      value: "kaia-orderbook-api"
     - name: DD_ENV
       value: "dev"
 # ServiceAccount
