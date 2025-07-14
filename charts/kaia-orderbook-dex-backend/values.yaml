@@ -65,7 +65,7 @@ api:
     - name: DD_SERVICE
       value: "kaia-orderbook-api"
     - name: DD_ENV
-      value: "{{ .Values.environment.phase }}"
+      value: "dev"  # This will be overridden by environment-specific values files
   
   livenessProbe:
     httpGet:
@@ -117,7 +117,7 @@ event:
     - name: DD_SERVICE
       value: "kaia-orderbook-event"
     - name: DD_ENV
-      value: "{{ .Values.environment.phase }}"
+      value: "dev"  # This will be overridden by environment-specific values files
 
 # Environment Configuration
 environment:

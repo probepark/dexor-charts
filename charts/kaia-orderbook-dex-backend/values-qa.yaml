@@ -59,7 +59,8 @@ api:
       value: "qa"
     - name: CONFIG_FILE
       value: "/app/config/qa.toml"
-
+    - name: DD_ENV
+      value: "qa"
 # Event Service Configuration
 event:
   replicaCount: 1
@@ -81,6 +82,8 @@ event:
       value: "qa"
     - name: CONFIG_FILE
       value: "/app/config/qa.toml"
+    - name: DD_ENV
+      value: "qa"
 
 # ServiceAccount
 serviceAccount:

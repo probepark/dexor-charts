@@ -67,7 +67,7 @@ nitroNode:
     - name: DD_SERVICE
       value: "kaia-orderbook-nitro-node"
     - name: DD_ENV
-      value: "{{ .Values.environment.phase }}"
+      value: "dev"  # This will be overridden by environment-specific values files
 
   # Command line arguments for nitro node
   args: []  # Most args are now dynamically generated based on configuration
@@ -144,7 +144,7 @@ validator:
     - name: DD_SERVICE
       value: "kaia-orderbook-validator"
     - name: DD_ENV
-      value: "{{ .Values.environment.phase }}"
+      value: "dev"  # This will be overridden by environment-specific values files
   
   # Default Pod Anti-Affinity to prevent multiple pods on the same node
   # This helps avoid PVC multi-attach errors for RWO volumes

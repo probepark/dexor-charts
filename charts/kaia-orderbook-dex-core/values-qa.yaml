@@ -54,6 +54,9 @@ nitroNode:
   # Enable health check for sequencer mode
   healthCheck:
     enabled: true
+  env:
+    - name: DD_ENV
+      value: "qa"
 
   # Enable ingress for L2 RPC access
   ingress:
