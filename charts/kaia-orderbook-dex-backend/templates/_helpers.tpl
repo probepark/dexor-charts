@@ -49,9 +49,6 @@ Selector labels
 {{- define "kaia-orderbook-dex-backend.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "kaia-orderbook-dex-backend.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-{{- with .Values.commonLabels }}
-{{ toYaml . }}
-{{- end }}
 {{- end }}
 
 {{/*
@@ -84,6 +81,26 @@ Event Service selector labels
 {{- define "kaia-orderbook-dex-backend.event.selectorLabels" -}}
 {{ include "kaia-orderbook-dex-backend.selectorLabels" . }}
 app.kubernetes.io/component: event
+{{- end }}
+
+{{/*
+Pod labels for API
+*/}}
+{{- define "kaia-orderbook-dex-backend.api.podLabels" -}}
+{{ include "kaia-orderbook-dex-backend.api.selectorLabels" . }}
+{{- with .Values.commonLabels }}
+{{ toYaml . }}
+{{- end }}
+{{- end }}
+
+{{/*
+Pod labels for Event
+*/}}
+{{- define "kaia-orderbook-dex-backend.event.podLabels" -}}
+{{ include "kaia-orderbook-dex-backend.event.selectorLabels" . }}
+{{- with .Values.commonLabels }}
+{{ toYaml . }}
+{{- end }}
 {{- end }}
 
 {{/*

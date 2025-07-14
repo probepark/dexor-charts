@@ -49,9 +49,6 @@ Selector labels
 {{- define "kaia-orderbook-dex-core.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "kaia-orderbook-dex-core.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-{{- with .Values.commonLabels }}
-{{ toYaml . }}
-{{- end }}
 {{- end }}
 
 {{/*
@@ -84,6 +81,26 @@ Validator selector labels
 {{- define "kaia-orderbook-dex-core.validator.selectorLabels" -}}
 {{ include "kaia-orderbook-dex-core.selectorLabels" . }}
 app.kubernetes.io/component: validator
+{{- end }}
+
+{{/*
+Pod labels for Nitro Node
+*/}}
+{{- define "kaia-orderbook-dex-core.nitroNode.podLabels" -}}
+{{ include "kaia-orderbook-dex-core.nitroNode.selectorLabels" . }}
+{{- with .Values.commonLabels }}
+{{ toYaml . }}
+{{- end }}
+{{- end }}
+
+{{/*
+Pod labels for Validator
+*/}}
+{{- define "kaia-orderbook-dex-core.validator.podLabels" -}}
+{{ include "kaia-orderbook-dex-core.validator.selectorLabels" . }}
+{{- with .Values.commonLabels }}
+{{ toYaml . }}
+{{- end }}
 {{- end }}
 
 {{/*

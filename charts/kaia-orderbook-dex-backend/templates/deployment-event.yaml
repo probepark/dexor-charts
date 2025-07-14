@@ -15,7 +15,7 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
       labels:
-        {{- include "kaia-orderbook-dex-backend.event.selectorLabels" . | nindent 8 }}
+        {{- include "kaia-orderbook-dex-backend.event.podLabels" . | nindent 8 }}
     spec:
       {{- with .Values.global.imagePullSecrets }}
       imagePullSecrets:
