@@ -109,6 +109,32 @@ variable "enable_sequencer_pool" {
   default     = false
 }
 
+variable "enable_datadog" {
+  description = "Enable Datadog monitoring"
+  type        = bool
+  default     = false
+}
+
+variable "datadog_api_key" {
+  description = "Datadog API key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "datadog_app_key" {
+  description = "Datadog Application key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "datadog_site" {
+  description = "Datadog site (e.g., datadoghq.com, datadoghq.eu)"
+  type        = string
+  default     = "datadoghq.com"
+}
+
 # ==============================================================================
 # LOCAL VALUES
 # ==============================================================================
@@ -687,6 +713,17 @@ resource "kubernetes_namespace" "sequencer" {
   depends_on = [google_container_node_pool.primary_nodes]
 }
 
+resource "kubernetes_namespace" "datadog" {
+  count = var.enable_datadog ? 1 : 0
+  metadata {
+    name = "datadog"
+    labels = {
+      name = "datadog"
+    }
+  }
+  depends_on = [google_container_node_pool.primary_nodes]
+}
+
 # Kubernetes Service Account for External DNS
 resource "kubernetes_service_account" "external_dns" {
   count = var.enable_external_dns ? 1 : 0
@@ -1076,9 +1113,241 @@ resource "helm_release" "argocd_image_updater" {
   })]
 
   depends_on = [
-    helm_release.argocd,
-    kubernetes_config_map.argocd_image_updater_config
+    helm_release.argocd
   ]
+}
+
+# Datadog Operator
+resource "helm_release" "datadog_operator" {
+  count            = var.enable_datadog ? 1 : 0
+  name             = "datadog-operator"
+  repository       = "https://helm.datadoghq.com"
+  chart            = "datadog-operator"
+  version          = "1.4.0"
+  namespace        = kubernetes_namespace.datadog[0].metadata[0].name
+  create_namespace = false
+
+  values = [yamlencode({
+    replicaCount = var.environment == "prod" ? 2 : 1
+    image = {
+      tag = "1.4.0"
+    }
+    nodeSelector = var.environment == "prod" ? { environment = "prod" } : {}
+    tolerations = var.environment == "prod" ? [{
+      key      = "environment"
+      operator = "Equal"
+      value    = "prod"
+      effect   = "NoSchedule"
+    }] : []
+    resources = {
+      requests = {
+        cpu    = "100m"
+        memory = "128Mi"
+      }
+      limits = {
+        cpu    = "500m"
+        memory = "512Mi"
+      }
+    }
+    watchNamespaces = []  # Watch all namespaces
+    datadogMonitor = {
+      enabled = false  # Disable DatadogMonitor CRD since we're not using it
+    }
+    datadogSLO = {
+      enabled = false  # Disable DatadogSLO CRD since we're not using it
+    }
+  })]
+
+  depends_on = [
+    google_container_node_pool.primary_nodes,
+    kubernetes_namespace.datadog
+  ]
+}
+
+# NOTE: DatadogAgent CRD will be created after the operator is installed
+# To avoid "CRD not found" errors during terraform plan, we'll create
+# the DatadogAgent resource separately after initial deployment.
+# 
+# Uncomment the following resource after running 'terraform apply' once:
+#
+# # Wait for Datadog CRDs to be installed
+# resource "time_sleep" "wait_for_datadog_crds" {
+#   count = var.enable_datadog ? 1 : 0
+#
+#   depends_on = [helm_release.datadog_operator]
+#
+#   create_duration = "30s"
+# }
+#
+# # Datadog Agent configuration using DatadogAgent CRD
+# resource "kubernetes_manifest" "datadog_agent" {
+#   count = var.enable_datadog ? 1 : 0
+#   
+#   manifest = {
+#     apiVersion = "datadoghq.com/v2alpha1"
+#     kind       = "DatadogAgent"
+#     metadata = {
+#       name      = "datadog"
+#       namespace = kubernetes_namespace.datadog[0].metadata[0].name
+#     }
+#     spec = {
+#       global = {
+#         clusterName = "${var.environment}-gke-cluster"
+#         site        = var.datadog_site
+#         credentials = {
+#           apiSecret = {
+#             secretName = "datadog-secret"
+#             keyName    = "api-key"
+#           }
+#           appSecret = {
+#             secretName = "datadog-secret"
+#             keyName    = "app-key"
+#           }
+#         }
+#       }
+#       features = {
+#         apm = {
+#           enabled = false
+#         }
+#         logCollection = {
+#           enabled                    = true
+#           containerCollectAll        = false  # Don't collect all containers
+#           containerCollectUsingFiles = true
+#         }
+#         liveProcessCollection = {
+#           enabled = false
+#         }
+#         liveContainerCollection = {
+#           enabled = false
+#         }
+#         npm = {
+#           enabled = false
+#         }
+#         orchestratorExplorer = {
+#           enabled = false
+#         }
+#         prometheusScrape = {
+#           enabled = false
+#         }
+#         usm = {
+#           enabled = false
+#         }
+#       }
+#       override = {
+#         nodeAgent = {
+#           nodeSelector = var.environment == "prod" ? { environment = "prod" } : {}
+#           tolerations = var.environment == "prod" ? [{
+#             key      = "environment"
+#             operator = "Equal"
+#             value    = "prod"
+#             effect   = "NoSchedule"
+#           }] : []
+#           resources = {
+#             requests = {
+#               cpu    = "200m"
+#               memory = "256Mi"
+#             }
+#             limits = {
+#               cpu    = "1000m"
+#               memory = "512Mi"
+#             }
+#           }
+#           env = [
+#             {
+#               name  = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL"
+#               value = "false"
+#             },
+#             {
+#               name  = "DD_LOGS_CONFIG_K8S_CONTAINER_USE_FILE"
+#               value = "true"
+#             },
+#             {
+#               name  = "DD_LOGS_CONFIG_AUTO_MULTI_LINE_DETECTION"
+#               value = "true"
+#             },
+#             # Option 1: Label-based filtering (easiest)
+#             {
+#               name  = "DD_LOGS_CONFIG_CONTAINER_COLLECT_USING_LABELS"
+#               value = "true"
+#             },
+#             {
+#               name  = "DD_CONTAINER_INCLUDE_LABELS"
+#               value = "datadog-logs-enabled=true"
+#             }
+#             # Option 2: Namespace filtering
+#             # {
+#             #   name  = "DD_CONTAINER_INCLUDE"
+#             #   value = "namespace:backend namespace:core"
+#             # }
+#           ]
+#         }
+#         clusterAgent = {
+#           replicas = var.environment == "prod" ? 2 : 1
+#           nodeSelector = var.environment == "prod" ? { environment = "prod" } : {}
+#           tolerations = var.environment == "prod" ? [{
+#             key      = "environment"
+#             operator = "Equal"
+#             value    = "prod"
+#             effect   = "NoSchedule"
+#           }] : []
+#           resources = {
+#             requests = {
+#               cpu    = "200m"
+#               memory = "256Mi"
+#             }
+#             limits = {
+#               cpu    = "1000m"
+#               memory = "512Mi"
+#             }
+#           }
+#         }
+#         clusterChecksRunner = {
+#           replicas = var.environment == "prod" ? 2 : 1
+#           nodeSelector = var.environment == "prod" ? { environment = "prod" } : {}
+#           tolerations = var.environment == "prod" ? [{
+#             key      = "environment"
+#             operator = "Equal"
+#             value    = "prod"
+#             effect   = "NoSchedule"
+#           }] : []
+#           resources = {
+#             requests = {
+#               cpu    = "200m"
+#               memory = "256Mi"
+#             }
+#             limits = {
+#               cpu    = "1000m"
+#               memory = "512Mi"
+#             }
+#           }
+#         }
+#       }
+#     }
+#   }
+#
+#   depends_on = [
+#     helm_release.datadog_operator,
+#     kubernetes_secret.datadog_secret,
+#     time_sleep.wait_for_datadog_crds
+#   ]
+# }
+
+# Datadog API and App keys secret
+resource "kubernetes_secret" "datadog_secret" {
+  count = var.enable_datadog ? 1 : 0
+  metadata {
+    name      = "datadog-secret"
+    namespace = kubernetes_namespace.datadog[0].metadata[0].name
+  }
+
+  data = {
+    "api-key" = var.datadog_api_key
+    "app-key" = var.datadog_app_key
+  }
+
+  type = "Opaque"
+  
+  depends_on = [kubernetes_namespace.datadog]
 }
 
 # ==============================================================================
@@ -1149,4 +1418,23 @@ output "kubectl_config_command" {
 output "sequencer_node_pool_name" {
   description = "Sequencer node pool name"
   value       = var.enable_sequencer_pool ? google_container_node_pool.sequencer_nodes[0].name : null
+}
+
+output "datadog_operator_enabled" {
+  description = "Whether Datadog Operator is enabled"
+  value       = var.enable_datadog
+}
+
+output "datadog_namespace" {
+  description = "Datadog namespace"
+  value       = var.enable_datadog ? kubernetes_namespace.datadog[0].metadata[0].name : null
+}
+
+output "datadog_operator_status" {
+  description = "Datadog Operator deployment status"
+  value       = var.enable_datadog ? "Check 'kubectl get pods -n datadog' for operator status" : "Datadog Operator not enabled"
+}
+output "datadog_next_steps" {
+  description = "Next steps for Datadog setup"
+  value       = var.enable_datadog ? "After operator is running, apply DatadogAgent: kubectl apply -f terraform/datadog-agent-${var.environment}.yaml" : ""
 }

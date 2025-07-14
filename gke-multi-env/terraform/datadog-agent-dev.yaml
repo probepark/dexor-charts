@@ -1,0 +1,61 @@
+apiVersion: datadoghq.com/v2alpha1
+kind: DatadogAgent
+metadata:
+  name: datadog
+  namespace: datadog
+spec:
+  global:
+    clusterName: "dev-gke-cluster"
+    site: "datadoghq.com"
+    credentials:
+      apiSecret:
+        secretName: datadog-secret
+        keyName: api-key
+      appSecret:
+        secretName: datadog-secret
+        keyName: app-key
+  features:
+    apm:
+      enabled: false
+    logCollection:
+      enabled: true
+      containerCollectAll: false
+      containerCollectUsingFiles: true
+    liveProcessCollection:
+      enabled: false
+    liveContainerCollection:
+      enabled: false
+    npm:
+      enabled: false
+    orchestratorExplorer:
+      enabled: false
+    prometheusScrape:
+      enabled: false
+    usm:
+      enabled: false
+  override:
+    nodeAgent:
+      env:
+        - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
+          value: "false"
+        - name: DD_LOGS_CONFIG_K8S_CONTAINER_USE_FILE
+          value: "true"
+        - name: DD_LOGS_CONFIG_AUTO_MULTI_LINE_DETECTION
+          value: "true"
+        - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_USING_LABELS
+          value: "true"
+        - name: DD_CONTAINER_INCLUDE_LABELS
+          value: "datadog-logs-enabled=true"
+      containers:
+        agent:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+    clusterAgent:
+      replicas: 1
+    clusterChecksRunner:
+      replicas: 1

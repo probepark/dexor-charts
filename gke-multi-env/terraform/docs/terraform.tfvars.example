@@ -19,6 +19,15 @@ db_user             = "app_user"
 # Enable Arbitrum sequencer node pool
 enable_sequencer_pool = false  # Set to true to create sequencer node pool
 
+# Datadog Monitoring Configuration
+enable_datadog = false  # Set to true to enable Datadog monitoring
+
+# Datadog Configuration (required if enable_datadog = true)
+# Get these from https://app.datadoghq.com/organization-settings/api-keys
+# datadog_api_key = "your-datadog-api-key"  # Keep this secure!
+# datadog_app_key = "your-datadog-app-key"  # Keep this secure!
+# datadog_site    = "datadoghq.com"         # Use "datadoghq.eu" for EU region
+
 # Artifact Registry configuration (if using artifact-registry.tf)
 # artifact_registry_location = "asia-northeast3"
 # artifact_registry_repositories = {

@@ -122,6 +122,9 @@ spec:
             - name: SEQUENCER_INBOX_ADDRESS
               value: {{ .Values.environment.contracts.sequencerInbox | quote }}
             {{- end }}
+            {{- with .Values.nitroNode.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.nitroNode.service.httpPort }}

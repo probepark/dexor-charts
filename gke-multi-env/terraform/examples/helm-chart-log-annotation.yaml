@@ -1,0 +1,81 @@
+# Example: Helm Chart values.yaml with Datadog log collection annotations
+
+# Backend Helm Chart Example
+backend:
+  podAnnotations:
+    # Enable log collection for this pod
+    ad.datadoghq.com/backend.logs: |
+      [
+        {
+          "source": "nodejs",
+          "service": "backend-api",
+          "tags": ["team:backend", "env:production"],
+          "log_processing_rules": [
+            {
+              "type": "exclude_at_match",
+              "name": "exclude_healthcheck",
+              "pattern": "GET /health"
+            }
+          ]
+        }
+      ]
+
+# Core Helm Chart Example  
+core:
+  podAnnotations:
+    # Enable log collection for this pod
+    ad.datadoghq.com/core.logs: |
+      [
+        {
+          "source": "java",
+          "service": "core-service",
+          "tags": ["team:core", "env:production"],
+          "log_processing_rules": [
+            {
+              "type": "multi_line",
+              "name": "java_stack_trace",
+              "pattern": "^\\s"
+            }
+          ]
+        }
+      ]
+
+# Frontend Helm Chart Example (logs NOT collected - no annotation)
+frontend:
+  podAnnotations:
+    # No Datadog log annotation = no log collection
+
+# Advanced Example with Multiple Containers
+api:
+  podAnnotations:
+    # Main container
+    ad.datadoghq.com/api.logs: |
+      [
+        {
+          "source": "go",
+          "service": "api-gateway",
+          "tags": ["team:platform", "component:gateway"]
+        }
+      ]
+    # Sidecar container (if exists)
+    ad.datadoghq.com/envoy.logs: |
+      [
+        {
+          "source": "envoy",
+          "service": "api-gateway-proxy",
+          "tags": ["team:platform", "component:proxy"]
+        }
+      ]
+
+# Database Migration Job Example
+database-migration:
+  job:
+    podAnnotations:
+      ad.datadoghq.com/migration.logs: |
+        [
+          {
+            "source": "postgresql",
+            "service": "db-migration",
+            "tags": ["type:migration", "database:postgres"]
+          }
+        ]

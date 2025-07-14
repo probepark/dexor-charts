@@ -7,6 +7,10 @@ global:
   imagePullSecrets: []
   storageClass: ""
 
+# Common labels for all resources
+commonLabels:
+  datadog-logs-enabled: "true"
+
 # API Service Configuration
 api:
   enabled: true
@@ -53,6 +57,16 @@ api:
   tolerations: []
   affinity: {}
   
+  env:
+    - name: DD_AGENT_HOST
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: DD_SERVICE
+      value: "kaia-orderbook-api"
+    - name: DD_ENV
+      value: "{{ .Values.environment.phase }}"
+  
   livenessProbe:
     httpGet:
       path: /health
@@ -94,6 +108,16 @@ event:
   nodeSelector: {}
   tolerations: []
   affinity: {}
+  
+  env:
+    - name: DD_AGENT_HOST
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: DD_SERVICE
+      value: "kaia-orderbook-event"
+    - name: DD_ENV
+      value: "{{ .Values.environment.phase }}"
 
 # Environment Configuration
 environment:

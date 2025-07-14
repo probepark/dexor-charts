@@ -54,6 +54,9 @@ spec:
             - name: ROLLUP_ADDRESS
               value: {{ .Values.environment.contracts.rollup | quote }}
             {{- end }}
+            {{- with .Values.validator.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.validator.service.port }}

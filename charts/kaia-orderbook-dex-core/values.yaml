@@ -7,6 +7,10 @@ global:
   imagePullSecrets: []
   storageClass: ""
 
+# Common labels for all resources
+commonLabels:
+  datadog-logs-enabled: "true"
+
 # Nitro Node Configuration
 nitroNode:
   enabled: true
@@ -54,6 +58,16 @@ nitroNode:
   nodeSelector: {}
   tolerations: []
   affinity: {}
+
+  env:
+    - name: DD_AGENT_HOST
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: DD_SERVICE
+      value: "kaia-orderbook-nitro-node"
+    - name: DD_ENV
+      value: "{{ .Values.environment.phase }}"
 
   # Command line arguments for nitro node
   args: []  # Most args are now dynamically generated based on configuration
@@ -121,6 +135,17 @@ validator:
 
   nodeSelector: {}
   tolerations: []
+  
+  env:
+    - name: DD_AGENT_HOST
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: DD_SERVICE
+      value: "kaia-orderbook-validator"
+    - name: DD_ENV
+      value: "{{ .Values.environment.phase }}"
+  
   # Default Pod Anti-Affinity to prevent multiple pods on the same node
   # This helps avoid PVC multi-attach errors for RWO volumes
   affinity:

@@ -6,6 +6,10 @@ global:
   imageRegistry: ""
   imagePullSecrets: []
 
+# Common labels for all resources
+commonLabels:
+  datadog-logs-enabled: "true"
+
 replicaCount: 2
 
 image:
@@ -77,6 +81,16 @@ securityContext: {}
 nodeSelector: {}
 tolerations: []
 affinity: {}
+
+env:
+  - name: DD_AGENT_HOST
+    valueFrom:
+      fieldRef:
+        fieldPath: status.hostIP
+  - name: DD_SERVICE
+    value: "kaia-orderbook-frontend"
+  - name: DD_ENV
+    value: "{{ .Values.environment.phase }}"
 
 podDisruptionBudget:
   enabled: true
