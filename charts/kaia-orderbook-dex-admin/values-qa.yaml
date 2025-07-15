@@ -1,0 +1,36 @@
+# QA environment values for kaia-orderbook-dex-admin
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image:
+  repository: kaia-orderbook-admin
+  tag: "qa"
+
+ingress:
+  enabled: true
+  hosts:
+    - host: admin-qa.dexor.trade
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: admin-qa-dexor-trade-tls
+      hosts:
+        - admin-qa.dexor.trade
+
+# Environment configuration
+environment:
+  phase: "qa"
+  apiUrl: "https://api.dexor.trade/api/v1"
+  wsUrl: "wss://api.dexor.trade/ws"
+  nextjsUrl: "https://admin-qa.dexor.trade"
+
+env:
+  - name: DD_AGENT_HOST
+    valueFrom:
+      fieldRef:
+        fieldPath: status.hostIP
+  - name: DD_SERVICE
+    value: "kaia-orderbook-admin"
+  - name: DD_ENV
+    value: "qa"

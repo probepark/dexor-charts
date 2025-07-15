@@ -12,7 +12,7 @@ port = 8080
 read_timeout_in_second = 30
 read_header_timeout_in_second = 10
 idle_timeout_in_second = 60
-cors_allowed_origins = ["https://qa.dexor.trade", "https://api-qa.dexor.trade"]
+cors_allowed_origins = ["https://qa.dexor.trade", "https://api-qa.dexor.trade", "https://admin-qa.dexor.trade"]
 
 [ws_server]
 port = 9090

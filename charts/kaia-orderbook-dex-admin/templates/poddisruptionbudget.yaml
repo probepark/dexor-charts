@@ -1,0 +1,13 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "kaia-orderbook-dex-admin.fullname" . }}
+  labels:
+    {{- include "kaia-orderbook-dex-admin.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "kaia-orderbook-dex-admin.selectorLabels" . | nindent 6 }}
+{{- end }}

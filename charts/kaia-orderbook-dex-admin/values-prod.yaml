@@ -1,0 +1,61 @@
+# Production environment values for kaia-orderbook-dex-admin
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 3
+
+image:
+  repository: kaia-orderbook-admin
+  tag: "prod"
+
+ingress:
+  enabled: true
+  hosts:
+    - host: admin.dexor.trade
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: admin-dexor-trade-tls
+      hosts:
+        - admin.dexor.trade
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 70
+
+# Environment configuration
+environment:
+  phase: "prod"
+  apiUrl: "https://api.dexor.trade/api/v1"
+  wsUrl: "wss://api.dexor.trade/ws"
+  nextjsUrl: "https://admin.dexor.trade"
+
+env:
+  - name: DD_AGENT_HOST
+    valueFrom:
+      fieldRef:
+        fieldPath: status.hostIP
+  - name: DD_SERVICE
+    value: "kaia-orderbook-admin"
+  - name: DD_ENV
+    value: "prod"
+
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    namespace: "monitoring"
+    interval: 30s
+    scrapeTimeout: 10s

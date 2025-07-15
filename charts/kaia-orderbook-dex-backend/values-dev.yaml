@@ -24,7 +24,7 @@ api:
       nginx.ingress.kubernetes.io/proxy-body-size: "50m"
       # CORS support
       nginx.ingress.kubernetes.io/enable-cors: "true"
-      nginx.ingress.kubernetes.io/cors-allow-origin: "https://www.dexor.trade,https://dexor.trade,https://dev.dexor.trade"
+      nginx.ingress.kubernetes.io/cors-allow-origin: "https://www.dexor.trade,https://dexor.trade,https://dev.dexor.trade,https://admin-dev.dexor.trade"
       nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
       nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
       # WebSocket support

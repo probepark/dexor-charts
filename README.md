@@ -24,6 +24,7 @@ For detailed Docker operations, see [DOCKER_BUILD_GUIDE.md](DOCKER_BUILD_GUIDE.m
 ├── charts/                          # Helm charts
 │   ├── kaia-orderbook-dex-backend/  # Backend services chart
 │   ├── kaia-orderbook-dex-frontend/ # Frontend application chart
+│   ├── kaia-orderbook-dex-admin/    # Admin dashboard chart
 │   └── kaia-orderbook-dex-core/     # Core Nitro node chart
 ├── gke-multi-env/                   # GKE infrastructure (Terraform)
 ├── scripts/                         # Automation scripts
@@ -45,7 +46,12 @@ For detailed Docker operations, see [DOCKER_BUILD_GUIDE.md](DOCKER_BUILD_GUIDE.m
 - Nginx serving with runtime configuration
 - WebSocket support for real-time data
 
-### 3. Core (Nitro Node)
+### 3. Admin Dashboard
+- Next.js-based admin interface
+- Trading pairs and user management
+- Fee and analytics management
+
+### 4. Core (Nitro Node)
 - Arbitrum Nitro-based L2 solution
 - Orderbook DEX functionality
 - Sequencer and validator modes
@@ -81,6 +87,7 @@ TAG=v1.0.0 make docker-push-frontend
 ### Image URLs
 - Frontend: `asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry/kaia-orderbook-dex-frontend:dev`
 - Backend: `asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry/kaia-orderbook-dex-backend:dev`
+- Admin: `asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry/kaia-orderbook-dex-admin:dev`
 - Core: `asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry/kaia-orderbook-dex-core:dev`
 
 ## Helm Chart Deployment
@@ -93,6 +100,9 @@ helm install kaia-backend charts/kaia-orderbook-dex-backend/
 
 # Frontend
 helm install kaia-frontend charts/kaia-orderbook-dex-frontend/
+
+# Admin
+helm install kaia-admin charts/kaia-orderbook-dex-admin/
 
 # Core
 helm install kaia-core charts/kaia-orderbook-dex-core/
@@ -107,6 +117,7 @@ make helm-update-images
 # Then upgrade releases
 helm upgrade kaia-backend charts/kaia-orderbook-dex-backend/
 helm upgrade kaia-frontend charts/kaia-orderbook-dex-frontend/
+helm upgrade kaia-admin charts/kaia-orderbook-dex-admin/
 helm upgrade kaia-core charts/kaia-orderbook-dex-core/
 ```
 
@@ -169,6 +180,7 @@ make deploy-images
 # 3. Install/upgrade Helm releases
 helm upgrade --install kaia-backend charts/kaia-orderbook-dex-backend/
 helm upgrade --install kaia-frontend charts/kaia-orderbook-dex-frontend/
+helm upgrade --install kaia-admin charts/kaia-orderbook-dex-admin/
 helm upgrade --install kaia-core charts/kaia-orderbook-dex-core/
 ```
 
