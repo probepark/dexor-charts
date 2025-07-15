@@ -5,6 +5,7 @@
 image:
   repository: kaia-orderbook-dex-admin
   tag: "dev"
+  pullPolicy: Always
 
 ingress:
   enabled: true
