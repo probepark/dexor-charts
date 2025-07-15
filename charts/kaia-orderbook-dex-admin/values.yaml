@@ -95,14 +95,14 @@ podDisruptionBudget:
 
 livenessProbe:
   httpGet:
-    path: /api/health
+    path: /
     port: http
   initialDelaySeconds: 10
   periodSeconds: 10
 
 readinessProbe:
   httpGet:
-    path: /api/health
+    path: /
     port: http
   initialDelaySeconds: 5
   periodSeconds: 5
