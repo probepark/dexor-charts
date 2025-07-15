@@ -9,7 +9,7 @@ global:
 replicaCount: 2
 
 image:
-  repository: kaia-orderbook-admin
+  repository: kaia-orderbook-dex-admin
   pullPolicy: IfNotPresent
   tag: ""
 
@@ -85,7 +85,7 @@ env:
       fieldRef:
         fieldPath: status.hostIP
   - name: DD_SERVICE
-    value: "kaia-orderbook-admin"
+    value: "kaia-orderbook-dex-admin"
   - name: DD_ENV
     value: "dev"  # This will be overridden by environment-specific values files
 

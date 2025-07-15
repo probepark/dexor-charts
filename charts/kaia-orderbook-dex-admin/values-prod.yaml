@@ -5,7 +5,7 @@
 replicaCount: 3
 
 image:
-  repository: kaia-orderbook-admin
+  repository: kaia-orderbook-dex-admin
   tag: "prod"
 
 ingress:
@@ -48,7 +48,7 @@ env:
       fieldRef:
         fieldPath: status.hostIP
   - name: DD_SERVICE
-    value: "kaia-orderbook-admin"
+    value: "kaia-orderbook-dex-admin"
   - name: DD_ENV
     value: "prod"
 
