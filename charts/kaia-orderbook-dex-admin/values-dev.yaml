@@ -1,6 +1,8 @@
 # Development environment values for kaia-orderbook-dex-admin
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
+global:
+  imageRegistry: "asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry"
 
 image:
   repository: kaia-orderbook-dex-admin
