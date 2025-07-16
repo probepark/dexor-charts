@@ -1,0 +1,77 @@
+# CDN and Static Site Configuration Example
+
+# Frontend domains
+frontend_domains = ["app.example.com", "www.example.com"]
+
+# CORS configuration
+allowed_origins = ["https://app.example.com", "https://api.example.com"]
+
+# CDN Cache configuration
+cdn_client_ttl   = 3600   # 1 hour
+cdn_default_ttl  = 3600   # 1 hour  
+cdn_max_ttl      = 86400  # 24 hours
+cdn_serve_while_stale = 86400  # 24 hours
+
+# SSL Configuration
+use_managed_certificate = true  # Use Google-managed SSL certificate
+
+# For custom SSL certificate (if use_managed_certificate = false)
+# ssl_private_key = file("path/to/private.key")
+# ssl_certificate = file("path/to/certificate.crt")
+
+# API Backend (if you have API routes)
+# api_backend_service_id = "your-api-backend-service-id"
+
+# Custom path rules
+custom_path_rules = [
+  {
+    paths   = ["/api/*", "/graphql"]
+    service = "your-api-backend-service-id"
+  }
+]
+
+# HTTP to HTTPS redirect
+enable_http_redirect = true
+
+# DNS Configuration
+create_dns_records = true
+dns_managed_zone_name = "your-dns-zone"
+
+# Logging and Monitoring
+enable_cdn_logging = true
+log_retention_days = 30
+enable_monitoring = true
+notification_channels = ["projects/your-project/notificationChannels/12345"]
+
+# Security Configuration
+enable_cloud_armor = true
+cloud_armor_rules = [
+  {
+    action      = "deny(403)"
+    priority    = 5000
+    description = "Block specific IP ranges"
+    expression  = "origin.ip in ['192.0.2.0/24', '198.51.100.0/24']"
+  }
+]
+
+# IAP Configuration (for internal users only)
+enable_iap = false
+# iap_client_id = "your-oauth-client-id"
+# iap_client_secret = "your-oauth-client-secret"
+# iap_allowed_domain = "example.com"
+# iap_allowed_members = ["user:admin@example.com", "group:developers@example.com"]
+
+# Deployment Configuration
+enable_workload_identity_federation = true
+github_repository = "your-org/your-repo"
+github_owner = "your-org"
+github_repo_name = "your-repo"
+deployment_branch = "main"
+enable_cache_invalidation = true
+
+# GitHub Actions Configuration (Cloud Build not needed)
+# GitHub Actions will handle the build and deployment process
+
+# Storage Configuration
+static_content_retention_days = 365
+enable_versioning = true
