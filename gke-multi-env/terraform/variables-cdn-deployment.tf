@@ -1,5 +1,5 @@
-variable "enable_workload_identity_federation" {
-  description = "Enable Workload Identity Federation for GitHub Actions"
+variable "enable_cdn_workload_identity" {
+  description = "Enable Workload Identity Federation for CDN deployment via GitHub Actions"
   type        = bool
   default     = true
 }

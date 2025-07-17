@@ -57,7 +57,7 @@ enable_cloud_armor = true
 enable_iap = false
 
 # Optional: GitHub Actions deployment
-enable_workload_identity_federation = true
+enable_cdn_workload_identity = true
 github_repository = "your-org/your-repo"
 ```
 
@@ -100,7 +100,7 @@ Use the provided GitHub Actions workflow in `examples/github-actions-deploy.yml`
 - `custom_response_headers`: Add security headers
 
 ### Deployment Options
-- `enable_workload_identity_federation`: Use WIF for GitHub Actions
+- `enable_cdn_workload_identity`: Enable Workload Identity Federation for CDN deployment via GitHub Actions
 - `enable_cache_invalidation`: Auto-invalidate CDN after deploy
 
 ## File Structure

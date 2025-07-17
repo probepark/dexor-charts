@@ -72,7 +72,7 @@ output "github_actions_deployment" {
     GitHub Actions deployment requires:
     
     1. Service Account: ${google_service_account.frontend_deploy.email}
-    2. Workload Identity Provider: ${var.enable_workload_identity_federation ? google_iam_workload_identity_pool_provider.frontend_github[0].name : "Not configured"}
+    2. Workload Identity Provider: ${var.enable_cdn_workload_identity ? google_iam_workload_identity_pool_provider.frontend_github[0].name : "Not configured"}
     3. Bucket: gs://${google_storage_bucket.frontend_static.name}/
     4. URL Map: ${google_compute_url_map.frontend_url_map.name}
     

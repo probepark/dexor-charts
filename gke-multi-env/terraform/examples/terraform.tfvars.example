@@ -62,7 +62,7 @@ enable_iap = false
 # iap_allowed_members = ["user:admin@example.com", "group:developers@example.com"]
 
 # Deployment Configuration
-enable_workload_identity_federation = true
+enable_cdn_workload_identity = true
 github_repository = "your-org/your-repo"
 github_owner = "your-org"
 github_repo_name = "your-repo"
