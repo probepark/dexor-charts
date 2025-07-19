@@ -4,48 +4,21 @@ variable "enable_cdn_workload_identity" {
   default     = true
 }
 
-variable "github_repository" {
-  description = "GitHub repository in format 'owner/repo'"
-  type        = string
+variable "cdn_github_repositories" {
+  description = "List of GitHub repositories in format 'owner/repo' allowed to deploy to CDN"
+  type        = list(string)
   validation {
-    condition     = can(regex("^[^/]+/[^/]+$", var.github_repository))
-    error_message = "GitHub repository must be in format 'owner/repo'."
+    condition = alltrue([
+      for repo in var.cdn_github_repositories : can(regex("^[^/]+/[^/]+$", repo))
+    ])
+    error_message = "All GitHub repositories must be in format 'owner/repo'."
+  }
+  validation {
+    condition     = length(var.cdn_github_repositories) > 0
+    error_message = "At least one GitHub repository must be specified."
   }
 }
 
-variable "github_owner" {
-  description = "GitHub repository owner"
-  type        = string
-  default     = ""
-}
-
-variable "github_repo_name" {
-  description = "GitHub repository name"
-  type        = string
-  default     = ""
-}
-
-variable "deployment_branch" {
-  description = "Git branch to trigger deployments"
-  type        = string
-  default     = "main"
-}
-
-variable "enable_cache_invalidation" {
-  description = "Enable automatic CDN cache invalidation after deployment"
-  type        = bool
-  default     = true
-}
-
-
-variable "iap_allowed_domain" {
-  description = "Domain allowed for IAP access"
-  type        = string
-  default     = ""
-}
-
-variable "iap_allowed_members" {
-  description = "List of members allowed for IAP access"
-  type        = list(string)
-  default     = []
-}
+# IAP variables - not supported with current CDN backend bucket architecture
+# variable "iap_allowed_domain" - IAP disabled
+# variable "iap_allowed_members" - IAP disabled

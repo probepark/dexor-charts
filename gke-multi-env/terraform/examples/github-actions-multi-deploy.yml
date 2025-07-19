@@ -1,0 +1,180 @@
+name: Deploy to CDN Multi-Site
+
+on:
+  workflow_dispatch:
+    inputs:
+      site:
+        description: 'Site to deploy (frontend, admin, marketing, docs)'
+        required: true
+        type: choice
+        options:
+          - frontend
+          - admin
+          - marketing
+          - docs
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.WIF_PROVIDER }}
+  SERVICE_ACCOUNT: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+  URL_MAP_NAME: ${{ secrets.CDN_URL_MAP_NAME }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set site-specific variables
+        id: site-config
+        run: |
+          case "${{ inputs.site }}" in
+            frontend)
+              echo "build_dir=frontend" >> $GITHUB_OUTPUT
+              echo "dist_dir=frontend/dist" >> $GITHUB_OUTPUT
+              echo "bucket_suffix=frontend-static" >> $GITHUB_OUTPUT
+              ;;
+            admin)
+              echo "build_dir=admin" >> $GITHUB_OUTPUT
+              echo "dist_dir=admin/build" >> $GITHUB_OUTPUT
+              echo "bucket_suffix=admin-static" >> $GITHUB_OUTPUT
+              ;;
+            marketing)
+              echo "build_dir=marketing" >> $GITHUB_OUTPUT
+              echo "dist_dir=marketing/public" >> $GITHUB_OUTPUT
+              echo "bucket_suffix=marketing-static" >> $GITHUB_OUTPUT
+              ;;
+            docs)
+              echo "build_dir=docs" >> $GITHUB_OUTPUT
+              echo "dist_dir=docs/_site" >> $GITHUB_OUTPUT
+              echo "bucket_suffix=docs-static" >> $GITHUB_OUTPUT
+              ;;
+          esac
+          
+          # Set bucket name
+          echo "bucket_name=${{ secrets.GCP_PROJECT_ID }}-${{ inputs.environment }}-${{ inputs.site }}-static" >> $GITHUB_OUTPUT
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: ${{ steps.site-config.outputs.build_dir }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ steps.site-config.outputs.build_dir }}
+        run: npm ci
+
+      - name: Run tests
+        working-directory: ${{ steps.site-config.outputs.build_dir }}
+        run: npm test --if-present
+
+      - name: Build application
+        working-directory: ${{ steps.site-config.outputs.build_dir }}
+        run: |
+          npm run build
+        env:
+          NODE_ENV: production
+          VITE_API_URL: ${{ secrets[format('API_URL_{0}', inputs.environment)] }}
+          VITE_ENVIRONMENT: ${{ inputs.environment }}
+          REACT_APP_API_URL: ${{ secrets[format('API_URL_{0}', inputs.environment)] }}
+          REACT_APP_ENVIRONMENT: ${{ inputs.environment }}
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Storage
+        run: |
+          # Deploy to the specific site bucket
+          gsutil -m rsync -r -d ${{ steps.site-config.outputs.dist_dir }} gs://${{ steps.site-config.outputs.bucket_name }}/
+          
+          # Set cache headers based on file type
+          echo "Setting cache headers..."
+          
+          # Long cache for static assets
+          gsutil -m setmeta -h "Cache-Control:public, max-age=31536000, immutable" \
+            "gs://${{ steps.site-config.outputs.bucket_name }}/static/**/*" \
+            "gs://${{ steps.site-config.outputs.bucket_name }}/assets/**/*" \
+            "gs://${{ steps.site-config.outputs.bucket_name }}/**/*.js" \
+            "gs://${{ steps.site-config.outputs.bucket_name }}/**/*.css" || true
+          
+          # Short cache for HTML
+          gsutil -m setmeta -h "Cache-Control:public, max-age=3600" \
+            "gs://${{ steps.site-config.outputs.bucket_name }}/**/*.html" || true
+          
+          # Medium cache for JSON
+          gsutil -m setmeta -h "Cache-Control:public, max-age=7200" \
+            "gs://${{ steps.site-config.outputs.bucket_name }}/**/*.json" || true
+
+      - name: Invalidate CDN Cache
+        run: |
+          gcloud compute url-maps invalidate-cdn-cache ${{ env.URL_MAP_NAME }} \
+            --path "/*" \
+            --host "${{ inputs.site }}.example.com" \
+            --project ${{ env.PROJECT_ID }} \
+            --async
+
+      - name: Deployment Summary
+        run: |
+          echo "### Deployment Successful! 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Site**: ${{ inputs.site }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bucket**: \`${{ steps.site-config.outputs.bucket_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **CDN Cache**: Invalidated" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed at**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+
+  # Automated deployment triggered by push
+  auto-deploy:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    
+    strategy:
+      matrix:
+        include:
+          - path: frontend/**
+            site: frontend
+          - path: admin/**
+            site: admin
+          - path: marketing/**
+            site: marketing
+          - path: docs/**
+            site: docs
+    
+    steps:
+      - name: Check changed files
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            site:
+              - ${{ matrix.path }}
+      
+      - name: Deploy if changed
+        if: steps.changes.outputs.site == 'true'
+        uses: ./.github/workflows/deploy-cdn-site.yml
+        with:
+          site: ${{ matrix.site }}
+          environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}

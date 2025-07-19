@@ -58,7 +58,10 @@ enable_iap = false
 
 # Optional: GitHub Actions deployment
 enable_cdn_workload_identity = true
-github_repository = "your-org/your-repo"
+cdn_github_repositories = [
+  "your-org/frontend-repo",
+  "your-org/admin-dashboard-repo"
+]
 ```
 
 ### 2. Deploy Infrastructure
@@ -126,6 +129,11 @@ terraform/
    - Static assets (JS, CSS): Long cache with immutable flag
    - HTML files: Short cache for updates
    - Use versioned filenames for cache busting
+
+2. **Storage Retention**
+   - Default: Unlimited retention (no automatic deletion)
+   - Optional: Set `static_content_retention_days` to enable lifecycle rules
+   - Example: `static_content_retention_days = 90` for 90-day retention
 
 2. **Security**
    - Always use HTTPS

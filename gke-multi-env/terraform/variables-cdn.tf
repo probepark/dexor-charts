@@ -1,28 +1,12 @@
-variable "frontend_domains" {
-  description = "List of domains for the frontend application"
-  type        = list(string)
-  validation {
-    condition     = length(var.frontend_domains) > 0
-    error_message = "At least one frontend domain must be specified."
-  }
-}
-
-variable "allowed_origins" {
-  description = "Allowed CORS origins for the storage bucket"
-  type        = list(string)
-  default     = ["*"]
-}
-
-variable "static_content_retention_days" {
-  description = "Number of days to retain static content in the bucket"
-  type        = number
-  default     = 365
-}
+# Deprecated variables - use cdn_sites configuration instead
+# variable "frontend_domains" - use cdn_sites
+# variable "allowed_origins" - use cdn_sites.cors_origins  
+# variable "static_content_retention_days" - use cdn_sites.retention_days
 
 variable "enable_versioning" {
   description = "Enable versioning for the storage bucket"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "cdn_client_ttl" {
@@ -49,11 +33,8 @@ variable "cdn_serve_while_stale" {
   default     = 86400
 }
 
-variable "cdn_query_string_blacklist" {
-  description = "Query string parameters to exclude from cache key"
-  type        = list(string)
-  default     = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "fbclid", "gclid"]
-}
+# Deprecated variable - not used in current backend bucket configuration
+# variable "cdn_query_string_blacklist" - cache key policy not supported for backend buckets
 
 variable "custom_response_headers" {
   description = "Custom response headers to add"
@@ -92,20 +73,6 @@ variable "ssl_policy_id" {
   default     = null
 }
 
-variable "api_backend_service_id" {
-  description = "Backend service ID for API routes"
-  type        = string
-  default     = ""
-}
-
-variable "custom_path_rules" {
-  description = "Custom path rules for URL map"
-  type = list(object({
-    paths   = list(string)
-    service = string
-  }))
-  default = []
-}
 
 variable "enable_http_redirect" {
   description = "Enable HTTP to HTTPS redirect"
@@ -125,22 +92,14 @@ variable "dns_managed_zone_name" {
   default     = ""
 }
 
-variable "enable_cdn_logging" {
-  description = "Enable CDN access logging"
-  type        = bool
-  default     = true
-}
-
-variable "log_retention_days" {
-  description = "Number of days to retain logs"
-  type        = number
-  default     = 30
-}
+# Logging variables - not currently implemented in multi-site CDN
+# variable "enable_cdn_logging" - CDN logging not configured
+# variable "log_retention_days" - CDN logging not configured
 
 variable "enable_monitoring" {
   description = "Enable monitoring alerts and dashboards"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "notification_channels" {
@@ -172,16 +131,6 @@ variable "enable_iap" {
   default     = false
 }
 
-variable "iap_client_id" {
-  description = "OAuth2 client ID for IAP"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "iap_client_secret" {
-  description = "OAuth2 client secret for IAP"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
+# IAP variables - not supported with backend buckets
+# variable "iap_client_id" - IAP not supported for backend buckets  
+# variable "iap_client_secret" - IAP not supported for backend buckets

@@ -9,6 +9,8 @@ on:
       - '.github/workflows/deploy-frontend.yml'
   workflow_dispatch:
 
+# Note: This workflow will work for any repository listed in cdn_github_repositories terraform variable
+
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}

@@ -124,12 +124,6 @@ resource "google_compute_backend_bucket" "frontend_cdn_with_security" {
       ttl  = 120
     }
     
-    cache_key_policy {
-      include_host          = true
-      include_protocol      = true
-      include_query_string  = false
-      query_string_blacklist = var.cdn_query_string_blacklist
-    }
   }
   
   custom_response_headers = concat(
@@ -145,12 +139,8 @@ resource "google_compute_backend_bucket" "frontend_cdn_with_security" {
   edge_security_policy = google_compute_security_policy.frontend_security_policy[0].id
 }
 
-resource "google_compute_backend_service_iam_member" "iap" {
-  count            = var.enable_iap ? 1 : 0
-  backend_service  = google_compute_backend_bucket.frontend_cdn.name
-  role             = "roles/iap.httpsResourceAccessor"
-  member           = "domain:${var.iap_allowed_domain}"
-}
+# IAP access control is managed through the IAP resource configuration
+# Backend bucket IAM is not the correct approach for IAP
 
 resource "google_iap_web_backend_service_iam_binding" "frontend_iap" {
   count            = var.enable_iap ? 1 : 0

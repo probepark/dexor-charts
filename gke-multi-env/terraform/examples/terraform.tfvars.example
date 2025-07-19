@@ -8,7 +8,7 @@ allowed_origins = ["https://app.example.com", "https://api.example.com"]
 
 # CDN Cache configuration
 cdn_client_ttl   = 3600   # 1 hour
-cdn_default_ttl  = 3600   # 1 hour  
+cdn_default_ttl  = 3600   # 1 hour
 cdn_max_ttl      = 86400  # 24 hours
 cdn_serve_while_stale = 86400  # 24 hours
 
@@ -19,16 +19,6 @@ use_managed_certificate = true  # Use Google-managed SSL certificate
 # ssl_private_key = file("path/to/private.key")
 # ssl_certificate = file("path/to/certificate.crt")
 
-# API Backend (if you have API routes)
-# api_backend_service_id = "your-api-backend-service-id"
-
-# Custom path rules
-custom_path_rules = [
-  {
-    paths   = ["/api/*", "/graphql"]
-    service = "your-api-backend-service-id"
-  }
-]
 
 # HTTP to HTTPS redirect
 enable_http_redirect = true
@@ -63,15 +53,15 @@ enable_iap = false
 
 # Deployment Configuration
 enable_cdn_workload_identity = true
-github_repository = "your-org/your-repo"
-github_owner = "your-org"
-github_repo_name = "your-repo"
-deployment_branch = "main"
-enable_cache_invalidation = true
+cdn_github_repositories = [
+  "your-org/your-frontend-repo",
+  "your-org/your-admin-repo",
+  "your-org/another-frontend-repo"
+]
 
 # GitHub Actions Configuration (Cloud Build not needed)
 # GitHub Actions will handle the build and deployment process
 
 # Storage Configuration
-static_content_retention_days = 365
-enable_versioning = true
+# static_content_retention_days = 365  # Uncomment to enable automatic deletion after 365 days
+# enable_versioning = true

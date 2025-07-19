@@ -1,0 +1,142 @@
+# Multi-site CDN Configuration Example
+
+# Define multiple sites with their own domains and configurations
+cdn_sites = {
+  # Main frontend application
+  frontend = {
+    domains = [
+      "app.example.com",
+      "www.example.com"
+    ]
+    index_page        = "index.html"
+    error_page        = "404.html"
+    cors_origins      = ["https://api.example.com"]
+    retention_days    = null  # Unlimited retention
+    enable_versioning = true
+    enable_spa_routing = true
+    
+    # Cache configuration
+    cache_mode  = "CACHE_ALL_STATIC"
+    client_ttl  = 3600   # 1 hour
+    default_ttl = 3600   # 1 hour
+    max_ttl     = 86400  # 24 hours
+    
+    # Custom headers
+    custom_headers = [
+      "X-Environment: production",
+      "X-Site: frontend"
+    ]
+  }
+  
+  # Admin dashboard
+  admin = {
+    domains = [
+      "admin.example.com",
+      "dashboard.example.com"
+    ]
+    cors_origins      = ["https://api.example.com"]
+    enable_versioning = true
+    enable_spa_routing = true
+    
+    # Shorter cache for admin updates
+    client_ttl  = 600    # 10 minutes
+    default_ttl = 600    # 10 minutes
+    max_ttl     = 3600   # 1 hour
+    
+    # IAP protection for admin site (optional)
+    iap_members = [
+      "user:admin@example.com",
+      "group:admins@example.com"
+    ]
+  }
+  
+  # Marketing/landing pages
+  marketing = {
+    domains = [
+      "example.com",
+      "landing.example.com"
+    ]
+    enable_versioning = false
+    
+    # Longer cache for static marketing content
+    client_ttl  = 86400   # 24 hours
+    default_ttl = 86400   # 24 hours
+    max_ttl     = 604800  # 7 days
+  }
+  
+  # Documentation site
+  docs = {
+    domains = [
+      "docs.example.com",
+      "help.example.com"
+    ]
+    retention_days = 365  # Keep docs for 1 year
+    
+    # Moderate cache for documentation
+    client_ttl  = 7200   # 2 hours
+    default_ttl = 7200   # 2 hours
+    max_ttl     = 43200  # 12 hours
+  }
+}
+
+# Which site to use as default when no host matches
+default_site = "frontend"
+
+# Shared CDN configuration
+cdn_client_ttl        = 3600   # Default 1 hour
+cdn_default_ttl       = 3600   # Default 1 hour  
+cdn_max_ttl           = 86400  # Default 24 hours
+cdn_serve_while_stale = 86400  # 24 hours
+
+# SSL Configuration
+use_managed_certificate = true  # Google-managed SSL for all domains
+
+# Security headers applied to all sites
+custom_response_headers = [
+  "X-Frame-Options: SAMEORIGIN",
+  "X-Content-Type-Options: nosniff",
+  "X-XSS-Protection: 1; mode=block",
+  "Referrer-Policy: strict-origin-when-cross-origin"
+]
+
+# Query parameters to exclude from cache key
+cdn_query_string_blacklist = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "fbclid", "gclid"]
+
+# HTTP to HTTPS redirect
+enable_http_redirect = true
+
+# DNS Configuration
+create_dns_records    = true
+dns_managed_zone_name = "your-dns-zone"
+
+# Logging and Monitoring
+enable_cdn_logging    = true
+log_retention_days    = 30
+enable_monitoring     = true
+notification_channels = ["projects/your-project/notificationChannels/12345"]
+
+# Security Configuration
+enable_cloud_armor = true
+cloud_armor_rules = [
+  {
+    action      = "deny(403)"
+    priority    = 5000
+    description = "Block specific IP ranges"
+    expression  = "origin.ip in ['192.0.2.0/24', '198.51.100.0/24']"
+  }
+]
+
+# IAP Configuration (per-site configuration in cdn_sites)
+enable_iap = true
+
+# Deployment Configuration
+enable_cdn_workload_identity = true
+cdn_github_repositories = [
+  "your-org/frontend-repo",
+  "your-org/admin-repo",
+  "your-org/marketing-repo",
+  "your-org/docs-repo"
+]
+
+# Storage Configuration
+enable_versioning = false  # Default for all sites unless overridden
