@@ -28,11 +28,10 @@ resource "google_storage_bucket" "cdn_sites" {
   location                    = var.region
   force_destroy               = var.environment != "prod"
   uniform_bucket_level_access = true
-  public_access_prevention    = "enforced"
+  public_access_prevention    = "inherited"
   
   website {
     main_page_suffix = each.value.index_page != null ? each.value.index_page : "index.html"
-    not_found_page   = each.value.error_page != null ? each.value.error_page : "404.html"
   }
   
   cors {
@@ -153,6 +152,7 @@ resource "google_compute_url_map" "cdn_url_map" {
   name            = "${var.environment}-cdn-url-map"
   default_service = google_compute_backend_bucket.cdn_backends[var.default_site].id
   
+  
   dynamic "host_rule" {
     for_each = var.cdn_sites
     content {
@@ -167,43 +167,58 @@ resource "google_compute_url_map" "cdn_url_map" {
       name            = "${path_matcher.key}-paths"
       default_service = google_compute_backend_bucket.cdn_backends[path_matcher.key].id
       
+    }
+  }
+}
+
+# Application Load Balancer - URL map with custom error response policy
+resource "google_compute_url_map" "cdn_url_map_alb" {
+  name            = "${var.environment}-cdn-url-map-alb"
+  default_service = google_compute_backend_bucket.cdn_backends[var.default_site].id
+  
+  dynamic "host_rule" {
+    for_each = var.cdn_sites
+    content {
+      hosts        = host_rule.value.domains
+      path_matcher = "${host_rule.key}-paths"
+    }
+  }
+  
+  dynamic "path_matcher" {
+    for_each = var.cdn_sites
+    content {
+      name            = "${path_matcher.key}-paths"
+      default_service = google_compute_backend_bucket.cdn_backends[path_matcher.key].id
       
-      # SPA routing for HTML requests
-      dynamic "route_rules" {
+      # Custom error response policy for SPA routing
+      dynamic "default_custom_error_response_policy" {
         for_each = path_matcher.value.enable_spa_routing != null && path_matcher.value.enable_spa_routing ? [1] : []
         content {
-          priority = 1
-          match_rules {
-            prefix_match = "/"
-            header_matches {
-              header_name  = "Accept"
-              prefix_match = "text/html"
-            }
+          error_response_rule {
+            match_response_codes = ["404"]
+            override_response_code = 200
+            path = "/index.html"
           }
-          route_action {
-            url_rewrite {
-              path_prefix_rewrite = "/${path_matcher.value.index_page != null ? path_matcher.value.index_page : "index.html"}"
-            }
-          }
+          error_service = google_compute_backend_bucket.cdn_backends[path_matcher.key].id
         }
       }
     }
   }
 }
 
-# HTTPS proxy
-resource "google_compute_target_https_proxy" "cdn_https_proxy" {
-  name             = "${var.environment}-cdn-https-proxy"
-  url_map          = google_compute_url_map.cdn_url_map.id
+# Application Load Balancer - HTTPS proxy
+resource "google_compute_target_https_proxy" "cdn_https_proxy_alb" {
+  name             = "${var.environment}-cdn-https-proxy-alb"
+  url_map          = google_compute_url_map.cdn_url_map_alb.id
   ssl_certificates = var.use_managed_certificate ? [google_compute_managed_ssl_certificate.cdn_certs[0].id] : [google_compute_ssl_certificate.cdn_cert_custom[0].id]
   
   ssl_policy = var.ssl_policy_id
 }
 
-# HTTP proxy for redirect
-resource "google_compute_target_http_proxy" "cdn_http_proxy" {
+# Application Load Balancer - HTTP proxy for redirect
+resource "google_compute_target_http_proxy" "cdn_http_proxy_alb" {
   count   = var.enable_http_redirect ? 1 : 0
-  name    = "${var.environment}-cdn-http-proxy"
+  name    = "${var.environment}-cdn-http-proxy-alb"
   url_map = google_compute_url_map.cdn_http_redirect[0].id
 }
 
@@ -218,25 +233,25 @@ resource "google_compute_url_map" "cdn_http_redirect" {
   }
 }
 
-# Forwarding rules
-resource "google_compute_global_forwarding_rule" "cdn_https" {
-  name                  = "${var.environment}-cdn-https-forwarding-rule"
+# Application Load Balancer - Forwarding rules
+resource "google_compute_global_forwarding_rule" "cdn_https_alb" {
+  name                  = "${var.environment}-cdn-https-alb-rule"
   ip_protocol           = "TCP"
-  load_balancing_scheme = "EXTERNAL"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
   port_range            = "443"
-  target                = google_compute_target_https_proxy.cdn_https_proxy.id
+  target                = google_compute_target_https_proxy.cdn_https_proxy_alb.id
   ip_address            = google_compute_global_address.cdn_ip.id
   
   labels = local.common_labels
 }
 
-resource "google_compute_global_forwarding_rule" "cdn_http" {
+resource "google_compute_global_forwarding_rule" "cdn_http_alb" {
   count                 = var.enable_http_redirect ? 1 : 0
-  name                  = "${var.environment}-cdn-http-forwarding-rule"
+  name                  = "${var.environment}-cdn-http-alb-rule"
   ip_protocol           = "TCP"
-  load_balancing_scheme = "EXTERNAL"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
   port_range            = "80"
-  target                = google_compute_target_http_proxy.cdn_http_proxy[0].id
+  target                = google_compute_target_http_proxy.cdn_http_proxy_alb[0].id
   ip_address            = google_compute_global_address.cdn_ip.id
   
   labels = local.common_labels
@@ -260,6 +275,9 @@ resource "google_service_account" "cdn_deploy" {
   description  = "Service account for deploying static assets to CDN"
 }
 
+# Get the project number for CDN service account
+data "google_project" "current" {}
+
 # IAM permissions for each bucket
 resource "google_storage_bucket_iam_member" "cdn_deploy_admin" {
   for_each = var.cdn_sites
@@ -267,6 +285,24 @@ resource "google_storage_bucket_iam_member" "cdn_deploy_admin" {
   bucket = google_storage_bucket.cdn_sites[each.key].name
   role   = "roles/storage.admin"
   member = "serviceAccount:${google_service_account.cdn_deploy.email}"
+}
+
+# Grant Compute Engine service account access to buckets for CDN
+resource "google_storage_bucket_iam_member" "cdn_compute_service_account_viewer" {
+  for_each = var.cdn_sites
+  
+  bucket = google_storage_bucket.cdn_sites[each.key].name
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:service-${data.google_project.current.number}@compute-system.iam.gserviceaccount.com"
+}
+
+# Grant public read access to bucket objects for CDN
+resource "google_storage_bucket_iam_member" "cdn_public_viewer" {
+  for_each = var.cdn_sites
+  
+  bucket = google_storage_bucket.cdn_sites[each.key].name
+  role   = "roles/storage.objectViewer"
+  member = "allUsers"
 }
 
 # CDN cache invalidation permission
