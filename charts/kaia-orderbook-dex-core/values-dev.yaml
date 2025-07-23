@@ -85,7 +85,7 @@ nitroNode:
         hosts:
           - l2-ws-dev.dexor.trade
   staker:
-    enabled: true
+    enabled: false
     dangerous:
       withoutBlockValidator: true
     parentChainWallet:
