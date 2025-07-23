@@ -84,6 +84,8 @@ nitroNode:
       - secretName: l2-ws-dev-tls
         hosts:
           - l2-ws-dev.dexor.trade
+  staker:
+    enabled: true
 # Development environment configuration
 environment:
   phase: "dev"
