@@ -94,7 +94,15 @@ nitroNode:
   # Staker configuration
   staker:
     enabled: false
-    interval: 0
+    dangerous:
+      withoutBlockValidator: true
+    parentChainWallet:
+      privateKey: ""
+    disableChallenge: true
+    stakerInterval: "10s"
+    makeAssertionInterval: "10s"
+    strategy: "MakeNodes"
+    useSmartContractWallet: true
 
   # Health check configuration
   healthCheck:

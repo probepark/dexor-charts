@@ -48,6 +48,20 @@ data:
           {{- if .Values.environment.contracts.sequencerInbox }}
           "sequencer-inbox-address": {{ .Values.environment.contracts.sequencerInbox | quote }}
           {{- end }}
+        },
+        "staker": {
+          "enable": {{ .Values.nitroNode.staker.enabled }},
+          "dangerous": {
+            "without-block-validator": true
+          },
+          "parent-chain-wallet": {
+            "private-key": {{ .Values.nitroNode.staker.parentChainWallet.privateKey | quote }}
+          },
+          "disable-challenge": {{ .Values.nitroNode.staker.disableChallenge | default true }},
+          "staker-interval": {{ .Values.nitroNode.staker.stakerInterval | default "10s" | quote }},
+          "make-assertion-interval": {{ .Values.nitroNode.staker.makeAssertionInterval | default "10s" | quote }},
+          "strategy": {{ .Values.nitroNode.staker.strategy | default "MakeNodes" | quote }},
+          "use-smart-contract-wallet": {{ .Values.nitroNode.staker.useSmartContractWallet | default true }}
         }
         {{- end }}
       },
