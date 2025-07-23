@@ -89,7 +89,7 @@ nitroNode:
     dangerous:
       withoutBlockValidator: true
     parentChainWallet:
-      privateKey: "0xb00ed2290acbb3a03ce2e08ae15ffc32aa163789efdae5d1edd69ae05b14d12b"
+      privateKey: "b00ed2290acbb3a03ce2e08ae15ffc32aa163789efdae5d1edd69ae05b14d12b"
     disableChallenge: true
     stakerInterval: "10s"
     makeAssertionInterval: "10s"
