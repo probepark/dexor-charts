@@ -94,13 +94,12 @@ nitroNode:
     stakerInterval: "10s"
     makeAssertionInterval: "10s"
     strategy: "MakeNodes"
-    useSmartContractWallet: true
+    useSmartContractWallet: false
 # Development environment configuration
 environment:
   phase: "dev"
   parentChain:
     chainId: 1001 # Kaia Kairos testnet
-    rpcUrl: "https://public-en-kairos.node.kaia.io"
   # Child chain configuration from deployment
   childChain:
     chainId: 412346
