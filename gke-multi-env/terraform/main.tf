@@ -384,6 +384,20 @@ resource "google_service_account_iam_member" "cert_manager_workload_identity" {
   member             = "serviceAccount:${var.project_id}.svc.id.goog[cert-manager/cert-manager]"
 }
 
+# Grant Cloud Storage access to existing backend service account
+resource "google_project_iam_member" "backend_sa_storage_admin" {
+  project = var.project_id
+  role    = "roles/storage.objectAdmin"
+  member  = "serviceAccount:kaia-dex-backend-sa@${var.project_id}.iam.gserviceaccount.com"
+}
+
+# Grant bucket listing permission
+resource "google_project_iam_member" "backend_sa_storage_viewer" {
+  project = var.project_id
+  role    = "roles/storage.legacyBucketReader"
+  member  = "serviceAccount:kaia-dex-backend-sa@${var.project_id}.iam.gserviceaccount.com"
+}
+
 # GKE Cluster
 resource "google_container_cluster" "primary" {
   name     = "${var.environment}-gke-cluster"
@@ -724,6 +738,7 @@ resource "kubernetes_namespace" "datadog" {
   depends_on = [google_container_node_pool.primary_nodes]
 }
 
+
 # Kubernetes Service Account for External DNS
 resource "kubernetes_service_account" "external_dns" {
   count = var.enable_external_dns ? 1 : 0
@@ -747,6 +762,7 @@ resource "kubernetes_service_account" "sequencer" {
     }
   }
 }
+
 
 # Database Secret
 resource "kubernetes_secret" "db_credentials" {
@@ -1438,3 +1454,4 @@ output "datadog_next_steps" {
   description = "Next steps for Datadog setup"
   value       = var.enable_datadog ? "After operator is running, apply DatadogAgent: kubectl apply -f terraform/datadog-agent-${var.environment}.yaml" : ""
 }
+

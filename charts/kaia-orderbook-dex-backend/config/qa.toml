@@ -20,6 +20,8 @@ port = 9090
 [gcp]
 project_id = "orderbook-dex-dev"
 secret_name = "qa-app-config"
+storage_bucket = "dex-images-qa"
+storage_base_url = "https://storage.googleapis.com"
 
 [database]
 driver = "mysql"
