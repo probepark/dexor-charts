@@ -391,13 +391,6 @@ resource "google_project_iam_member" "backend_sa_storage_admin" {
   member  = "serviceAccount:kaia-dex-backend-sa@${var.project_id}.iam.gserviceaccount.com"
 }
 
-# Grant bucket listing permission
-resource "google_project_iam_member" "backend_sa_storage_viewer" {
-  project = var.project_id
-  role    = "roles/storage.legacyBucketReader"
-  member  = "serviceAccount:kaia-dex-backend-sa@${var.project_id}.iam.gserviceaccount.com"
-}
-
 # GKE Cluster
 resource "google_container_cluster" "primary" {
   name     = "${var.environment}-gke-cluster"
@@ -1183,7 +1176,7 @@ resource "helm_release" "datadog_operator" {
 # NOTE: DatadogAgent CRD will be created after the operator is installed
 # To avoid "CRD not found" errors during terraform plan, we'll create
 # the DatadogAgent resource separately after initial deployment.
-# 
+#
 # Uncomment the following resource after running 'terraform apply' once:
 #
 # # Wait for Datadog CRDs to be installed
@@ -1198,7 +1191,7 @@ resource "helm_release" "datadog_operator" {
 # # Datadog Agent configuration using DatadogAgent CRD
 # resource "kubernetes_manifest" "datadog_agent" {
 #   count = var.enable_datadog ? 1 : 0
-#   
+#
 #   manifest = {
 #     apiVersion = "datadoghq.com/v2alpha1"
 #     kind       = "DatadogAgent"
@@ -1362,7 +1355,7 @@ resource "kubernetes_secret" "datadog_secret" {
   }
 
   type = "Opaque"
-  
+
   depends_on = [kubernetes_namespace.datadog]
 }
 
