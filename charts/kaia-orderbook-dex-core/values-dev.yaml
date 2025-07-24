@@ -106,17 +106,17 @@ environment:
     chainName: "Kaia Orderbook DEX"
   # Contract addresses from deployment (2025-06-19)
   contracts:
-    rollup: "0xA90678945802cD4E6E2a3c8CDfaf5480F0becC58"
-    sequencerInbox: "0x5c5b1299e2dBDd04D3349229C3AE399d4eEbFAC2"
-    bridge: "0x922A0eb49ED2Ab09A31D0d0eA1480301c72EEc0A"
-    inbox: "0x22a3D2004B0C6Ec890d189F1B398Fa867A9D34B2"
+    rollup: "0xe4D7992e5e0F994c82073b6D805bcbd13212639f"
+    sequencerInbox: "0x0e4029512C2a7893669632faE2e9973cD03975a1"
+    bridge: "0x1b584BCc5359c84D8A26d4fEAAE5996aAD0541e3"
+    inbox: "0x5660b1227683f589818c14959b2a88b864fB72a2"
     outbox: "0xeE02cdE738071A12ae4c8c44E6a1D89A3780b972" # From deployment output
     rollupEventInbox: "0x7FbCc8caCA161CD9541D7700f55D21D164E58548" # From deployment output
     challengeManager: "0x64430eD79366B010aA2D56559722095B677059FC" # From deployment output
     adminProxy: "0xbCE3833f82FbfAf93685Acb243e6ff61e5DF528D" # From deployment output
-    upgradeExecutor: "0x12Ff37175406659d3383B62C1a8E75971d723e77" # From l2_chain_info.json
-    validatorWalletCreator: "0xfFF56C6Fc7FF4F2844b788bDc5123F6659A4fc44" # From deployment output
-    stakeToken: "0x5Ab49B2CcA80f73C6Cd42b2886b1383C1Eb585EA" # From l2_chain_info.json (WETH)
+    upgradeExecutor: "0x0E8536DE25f9277D30e0DB7af2b64534A0605C7e" # From l2_chain_info.json
+    validatorWalletCreator: "0xd54bEA42609092D3e7a41Cc51AE76E597Ca004e7" # From deployment output
+    stakeToken: "0xD06F45B188D9ccAf1E525B23E2a564c0fa034e5B" # From l2_chain_info.json (WETH)
 # Enable monitoring in dev for debugging
 monitoring:
   enabled: true
@@ -173,7 +173,7 @@ config:
           "AllowDebugPrecompiles": true,
           "DataAvailabilityCommittee": false,
           "InitialArbOSVersion": 32,
-          "InitialChainOwner": "0x74139D025E36500715DB586779D2c9Ac65da9fF1",
+          "InitialChainOwner": "0xf07ade7aa7dd067b6e9426a38bd538c0025bc784",
           "GenesisBlockNum": 0
         }
       }
@@ -213,32 +213,32 @@ config:
               "AllowDebugPrecompiles": true,
               "DataAvailabilityCommittee": false,
               "InitialArbOSVersion": 32,
-              "InitialChainOwner": "0x74139D025E36500715DB586779D2c9Ac65da9fF1",
+              "InitialChainOwner": "0xf07ade7aa7dd067b6e9426a38bd538c0025bc784",
               "GenesisBlockNum": 0
             }
           },
           "rollup": {
-            "bridge": "0x02EE98C18C5f36FDf82523C003E2b12370E8a438",
-            "inbox": "0x6DDe9fe2f3eea3Ee96Dc3C63Cd1d2986Ee149654",
-            "sequencer-inbox": "0x4ae3C4187B6377255Ad78dDe94a7B17064078D45",
-            "deployed-at": 191741840,
-            "rollup": "0x6C602b0C453c20cC8453F3b4880995f537b74353",
+            "bridge": "0x1b584BCc5359c84D8A26d4fEAAE5996aAD0541e3",
+            "inbox": "0x5660b1227683f589818c14959b2a88b864fB72a2",
+            "sequencer-inbox": "0x0e4029512C2a7893669632faE2e9973cD03975a1",
+            "deployed-at": 191743917,
+            "rollup": "0xe4D7992e5e0F994c82073b6D805bcbd13212639f",
             "native-token": "0x0000000000000000000000000000000000000000",
-            "upgrade-executor": "0x2cFC39487F185dd90Ee8e31f1fB2b3060A68F077",
-            "validator-wallet-creator": "0xA0Eb9790dB3d8D4aFCC736013FD774e02cA61c73",
-            "stake-token": "0xfD3C60D2eed74E0E552d72a51290f113cDb36968"
+            "upgrade-executor": "0x0E8536DE25f9277D30e0DB7af2b64534A0605C7e",
+            "validator-wallet-creator": "0xd54bEA42609092D3e7a41Cc51AE76E597Ca004e7",
+            "stake-token": "0xD06F45B188D9ccAf1E525B23E2a564c0fa034e5B"
           }
         }
       ]
     deployment.json: |
       {
-        "bridge": "0x02EE98C18C5f36FDf82523C003E2b12370E8a438",
-        "inbox": "0x6DDe9fe2f3eea3Ee96Dc3C63Cd1d2986Ee149654",
-        "sequencer-inbox": "0x4ae3C4187B6377255Ad78dDe94a7B17064078D45",
-        "deployed-at": 191741840,
-        "rollup": "0x6C602b0C453c20cC8453F3b4880995f537b74353",
+        "bridge": "0x1b584BCc5359c84D8A26d4fEAAE5996aAD0541e3",
+        "inbox": "0x5660b1227683f589818c14959b2a88b864fB72a2",
+        "sequencer-inbox": "0x0e4029512C2a7893669632faE2e9973cD03975a1",
+        "deployed-at": 191743917,
+        "rollup": "0xe4D7992e5e0F994c82073b6D805bcbd13212639f",
         "native-token": "0x0000000000000000000000000000000000000000",
-        "upgrade-executor": "0x2cFC39487F185dd90Ee8e31f1fB2b3060A68F077",
-        "validator-wallet-creator": "0xA0Eb9790dB3d8D4aFCC736013FD774e02cA61c73",
-        "stake-token": "0xfD3C60D2eed74E0E552d72a51290f113cDb36968"
+        "upgrade-executor": "0x0E8536DE25f9277D30e0DB7af2b64534A0605C7e",
+        "validator-wallet-creator": "0xd54bEA42609092D3e7a41Cc51AE76E597Ca004e7",
+        "stake-token": "0xD06F45B188D9ccAf1E525B23E2a564c0fa034e5B"
       }
