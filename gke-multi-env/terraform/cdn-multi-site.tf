@@ -135,6 +135,21 @@ resource "google_compute_managed_ssl_certificate" "cdn_certs" {
   }
 }
 
+# New SSL certificate for transition
+resource "google_compute_managed_ssl_certificate" "cdn_certs_new" {
+  count = var.use_managed_certificate ? 1 : 0
+  
+  name = "${var.environment}-cdn-ssl-cert-v2"
+  
+  managed {
+    domains = flatten([for site in var.cdn_sites : site.domains])
+  }
+  
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 resource "google_compute_ssl_certificate" "cdn_cert_custom" {
   count = var.use_managed_certificate ? 0 : 1
   
@@ -210,7 +225,9 @@ resource "google_compute_url_map" "cdn_url_map_alb" {
 resource "google_compute_target_https_proxy" "cdn_https_proxy_alb" {
   name             = "${var.environment}-cdn-https-proxy-alb"
   url_map          = google_compute_url_map.cdn_url_map_alb.id
-  ssl_certificates = var.use_managed_certificate ? [google_compute_managed_ssl_certificate.cdn_certs[0].id] : [google_compute_ssl_certificate.cdn_cert_custom[0].id]
+  ssl_certificates = var.use_managed_certificate ? [
+    google_compute_managed_ssl_certificate.cdn_certs_new[0].id
+  ] : [google_compute_ssl_certificate.cdn_cert_custom[0].id]
   
   ssl_policy = var.ssl_policy_id
 }
