@@ -10,7 +10,7 @@ api:
   replicaCount: 2 # Higher replica count for performance testing
   image:
     repository: kaia-orderbook-dex-backend/api-app
-    tag: "perf"
+    tag: "dev"
   service:
     type: ClusterIP
     port: 8080
@@ -74,7 +74,7 @@ event:
   replicaCount: 2 # Higher replica count for performance testing
   image:
     repository: kaia-orderbook-dex-backend/event-app
-    tag: "perf"
+    tag: "dev"
   resources:
     limits:
       cpu: 2000m # Higher CPU for performance testing
@@ -117,7 +117,7 @@ networkPolicy:
 monitoring:
   enabled: true # Enable for performance monitoring
   serviceMonitor:
-    enabled: true
+    enabled: false
     namespace: "monitoring"
     interval: 15s # More frequent scraping for performance tests
     scrapeTimeout: 10s
@@ -137,6 +137,11 @@ performance:
       whenUnsatisfiable: DoNotSchedule
 environment:
   phase: "perf"
+
+# Configuration files
+configFiles:
+  - perf.toml
+
 # Contract addresses (will be updated by deploy scripts)
 contracts:
   rollup: "0xE7c1A5385EdAf0F31d24F1EaD04bd58A178A065a"

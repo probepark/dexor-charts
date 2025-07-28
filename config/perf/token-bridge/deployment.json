@@ -1,0 +1,14 @@
+{
+  "l1": {
+    "gatewayRouter": "",
+    "erc20Gateway": "",
+    "wethGateway": ""
+  },
+  "l2": {
+    "gatewayRouter": "",
+    "erc20Gateway": "",
+    "wethGateway": ""
+  },
+  "rollupAddress": "0xE7c1A5385EdAf0F31d24F1EaD04bd58A178A065a",
+  "deployedAt": "2025-07-28T02:35:30Z"
+}

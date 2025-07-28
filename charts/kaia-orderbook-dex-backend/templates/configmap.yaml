@@ -9,3 +9,5 @@ data:
 {{ .Files.Get "config/dev.toml" | indent 4 }}
   qa.toml: |
 {{ .Files.Get "config/qa.toml" | indent 4 }}
+  perf.toml: |
+{{ .Files.Get "config/perf.toml" | indent 4 }}

@@ -11,7 +11,7 @@ replicaCount: 3  # Higher replica count for load testing
 
 image:
   repository: kaia-orderbook-dex-frontend
-  tag: "perf"
+  tag: "dev"
   pullPolicy: Always
 
 service:
@@ -159,7 +159,7 @@ topologySpreadConstraints:
 monitoring:
   enabled: true  # Enable for performance monitoring
   serviceMonitor:
-    enabled: true
+    enabled: false
     namespace: "monitoring"
     interval: 15s      # More frequent scraping for performance tests
     scrapeTimeout: 10s
