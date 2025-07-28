@@ -19,7 +19,7 @@ nitroNode:
       cpu: 2000m
       memory: 8Gi
   persistence:
-    size: 500Gi # Larger storage for performance data
+    size: 200Gi # Increased for sequencer mode
   # Node selector and tolerations for sequencer pool
   nodeSelector:
     workload: "arbitrum-sequencer"
@@ -37,7 +37,7 @@ nitroNode:
   persistentChain: "/data"
   # WASM module root from deployment
   wasmModuleRoot: "0x184884e1eb9fefdc158f6c8ac912bb183bf3cf83f0090317e0bc4ac5860baa39"
-  logLevel: 2 # More detailed logging for performance analysis
+  logLevel: 3
   # Enable health check for sequencer mode
   healthCheck:
     enabled: true
