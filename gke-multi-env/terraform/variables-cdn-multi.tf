@@ -28,3 +28,20 @@ variable "default_site" {
   
   # Note: validation that default_site exists in cdn_sites is handled at runtime
 }
+
+variable "additional_ssl_domains" {
+  description = "Additional domains to include in SSL certificate (e.g., for environments sharing the same ALB)"
+  type        = list(string)
+  default     = []
+}
+
+variable "additional_backend_mappings" {
+  description = "Additional backend mappings for environments sharing the same ALB"
+  type = list(object({
+    hosts               = list(string)
+    path_matcher_name   = string
+    backend_bucket_url  = string
+    enable_spa_routing  = optional(bool, true)
+  }))
+  default = []
+}

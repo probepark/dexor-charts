@@ -142,7 +142,7 @@ variable "datadog_site" {
 locals {
   env_config = {
     dev = {
-      gke_node_count         = 3
+      gke_node_count         = 2
       gke_min_node_count     = 1
       gke_max_node_count     = 5
       gke_machine_type       = "e2-standard-2"

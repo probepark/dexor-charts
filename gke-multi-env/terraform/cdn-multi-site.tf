@@ -127,7 +127,10 @@ resource "google_compute_managed_ssl_certificate" "cdn_certs" {
   name = "${var.environment}-cdn-ssl-cert"
   
   managed {
-    domains = flatten([for site in var.cdn_sites : site.domains])
+    domains = concat(
+      flatten([for site in var.cdn_sites : site.domains]),
+      var.additional_ssl_domains
+    )
   }
   
   lifecycle {
@@ -135,20 +138,6 @@ resource "google_compute_managed_ssl_certificate" "cdn_certs" {
   }
 }
 
-# New SSL certificate for transition
-resource "google_compute_managed_ssl_certificate" "cdn_certs_new" {
-  count = var.use_managed_certificate ? 1 : 0
-  
-  name = "${var.environment}-cdn-ssl-cert-v2"
-  
-  managed {
-    domains = flatten([for site in var.cdn_sites : site.domains])
-  }
-  
-  lifecycle {
-    create_before_destroy = true
-  }
-}
 
 resource "google_compute_ssl_certificate" "cdn_cert_custom" {
   count = var.use_managed_certificate ? 0 : 1
@@ -176,10 +165,13 @@ resource "google_compute_url_map" "cdn_url_map_alb" {
     }
   }
   
-  # Add perf domain to host rules
-  host_rule {
-    hosts        = ["perf.dexor.trade"]
-    path_matcher = "perf-dexor-frontend-paths"
+  # Add additional host rules for shared environments
+  dynamic "host_rule" {
+    for_each = var.additional_backend_mappings
+    content {
+      hosts        = host_rule.value.hosts
+      path_matcher = host_rule.value.path_matcher_name
+    }
   }
   
   dynamic "path_matcher" {
@@ -203,10 +195,26 @@ resource "google_compute_url_map" "cdn_url_map_alb" {
     }
   }
   
-  # Add perf path matcher
-  path_matcher {
-    name            = "perf-dexor-frontend-paths"
-    default_service = "https://www.googleapis.com/compute/v1/projects/${var.project_id}/global/backendBuckets/perf-dexor-frontend-backend"
+  # Add additional path matchers for shared environments
+  dynamic "path_matcher" {
+    for_each = var.additional_backend_mappings
+    content {
+      name            = path_matcher.value.path_matcher_name
+      default_service = path_matcher.value.backend_bucket_url
+      
+      # Custom error response policy for SPA routing
+      dynamic "default_custom_error_response_policy" {
+        for_each = path_matcher.value.enable_spa_routing ? [1] : []
+        content {
+          error_response_rule {
+            match_response_codes = ["404"]
+            override_response_code = 200
+            path = "/index.html"
+          }
+          error_service = path_matcher.value.backend_bucket_url
+        }
+      }
+    }
   }
 }
 
@@ -215,7 +223,7 @@ resource "google_compute_target_https_proxy" "cdn_https_proxy_alb" {
   name             = "${var.environment}-cdn-https-proxy-alb"
   url_map          = google_compute_url_map.cdn_url_map_alb.id
   ssl_certificates = var.use_managed_certificate ? [
-    google_compute_managed_ssl_certificate.cdn_certs_new[0].id
+    google_compute_managed_ssl_certificate.cdn_certs[0].id
   ] : [google_compute_ssl_certificate.cdn_cert_custom[0].id]
   
   ssl_policy = var.ssl_policy_id
