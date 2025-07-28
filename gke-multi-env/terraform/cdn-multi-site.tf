@@ -162,29 +162,6 @@ resource "google_compute_ssl_certificate" "cdn_cert_custom" {
   }
 }
 
-# URL map with host rules for each site
-resource "google_compute_url_map" "cdn_url_map" {
-  name            = "${var.environment}-cdn-url-map"
-  default_service = google_compute_backend_bucket.cdn_backends[var.default_site].id
-  
-  
-  dynamic "host_rule" {
-    for_each = var.cdn_sites
-    content {
-      hosts        = host_rule.value.domains
-      path_matcher = "${host_rule.key}-paths"
-    }
-  }
-  
-  dynamic "path_matcher" {
-    for_each = var.cdn_sites
-    content {
-      name            = "${path_matcher.key}-paths"
-      default_service = google_compute_backend_bucket.cdn_backends[path_matcher.key].id
-      
-    }
-  }
-}
 
 # Application Load Balancer - URL map with custom error response policy
 resource "google_compute_url_map" "cdn_url_map_alb" {
@@ -197,6 +174,12 @@ resource "google_compute_url_map" "cdn_url_map_alb" {
       hosts        = host_rule.value.domains
       path_matcher = "${host_rule.key}-paths"
     }
+  }
+  
+  # Add perf domain to host rules
+  host_rule {
+    hosts        = ["perf.dexor.trade"]
+    path_matcher = "perf-dexor-frontend-paths"
   }
   
   dynamic "path_matcher" {
@@ -218,6 +201,12 @@ resource "google_compute_url_map" "cdn_url_map_alb" {
         }
       }
     }
+  }
+  
+  # Add perf path matcher
+  path_matcher {
+    name            = "perf-dexor-frontend-paths"
+    default_service = "https://www.googleapis.com/compute/v1/projects/${var.project_id}/global/backendBuckets/perf-dexor-frontend-backend"
   }
 }
 

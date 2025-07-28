@@ -142,7 +142,7 @@ variable "datadog_site" {
 locals {
   env_config = {
     dev = {
-      gke_node_count         = 1
+      gke_node_count         = 3
       gke_min_node_count     = 1
       gke_max_node_count     = 5
       gke_machine_type       = "e2-standard-2"
@@ -161,7 +161,7 @@ locals {
       redis_tls_enabled      = false
       nginx_replicas         = 1
       sequencer_min_nodes    = 1
-      sequencer_max_nodes    = 2
+      sequencer_max_nodes    = 3
     }
     prod = {
       gke_node_count         = 3
@@ -523,7 +523,7 @@ resource "google_container_node_pool" "sequencer_nodes" {
 
   # Single zone configuration for sequencer
   node_locations = ["${var.region}-a"]
-  node_count     = 2
+  node_count     = 3
 
   autoscaling {
     min_node_count = local.config.sequencer_min_nodes

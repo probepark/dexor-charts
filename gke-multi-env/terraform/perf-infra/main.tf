@@ -37,6 +37,12 @@ variable "region" {
   default     = "asia-northeast3"
 }
 
+variable "environment" {
+  description = "Environment name"
+  type        = string
+  default     = "perf"
+}
+
 variable "dev_network_name" {
   description = "The name of the dev VPC network to use"
   type        = string
@@ -59,6 +65,136 @@ variable "application_secrets" {
   description = "Map of application secrets to store in Secret Manager"
   type        = map(string)
   default     = {}
+}
+
+# CDN Variables
+variable "cdn_sites" {
+  description = "Map of CDN site configurations"
+  type = map(object({
+    domains                = list(string)           # List of domains/CNAMEs for this site
+    index_page             = optional(string)       # Main page (default: index.html)
+    error_page             = optional(string)       # Error page (default: 404.html)
+    cors_origins           = optional(list(string)) # CORS allowed origins
+    retention_days         = optional(number)       # Days to retain content
+    enable_versioning      = optional(bool)         # Enable bucket versioning
+    cache_mode             = optional(string)       # CDN cache mode
+    client_ttl             = optional(number)       # Client cache TTL
+    default_ttl            = optional(number)       # CDN default TTL
+    max_ttl                = optional(number)       # CDN max TTL
+    custom_headers         = optional(list(string)) # Additional response headers
+    enable_spa_routing     = optional(bool)         # Enable SPA routing for HTML
+  }))
+  default = {}
+  
+  validation {
+    condition     = length(var.cdn_sites) >= 0
+    error_message = "CDN sites configuration must be valid."
+  }
+}
+
+variable "default_site" {
+  description = "Default site key to use when no host matches"
+  type        = string
+  default     = ""
+}
+
+variable "use_managed_certificate" {
+  description = "Whether to use Google-managed SSL certificates"
+  type        = bool
+  default     = true
+}
+
+variable "create_dns_records" {
+  description = "Whether to create DNS records automatically"
+  type        = bool
+  default     = true
+}
+
+variable "dns_managed_zone_name" {
+  description = "The name of the Cloud DNS managed zone"
+  type        = string
+  default     = ""
+}
+
+variable "enable_cdn_workload_identity" {
+  description = "Enable workload identity for CDN operations"
+  type        = bool
+  default     = false
+}
+
+variable "cdn_github_repositories" {
+  description = "List of GitHub repositories for CDN deployment"
+  type        = list(string)
+  default     = []
+}
+
+# Additional CDN variables
+variable "enable_cloud_armor" {
+  description = "Enable Cloud Armor security policies"
+  type        = bool
+  default     = false
+}
+
+variable "cloud_armor_rules" {
+  description = "Cloud Armor security policy rules"
+  type        = map(any)
+  default     = {}
+}
+
+variable "enable_versioning" {
+  description = "Enable versioning for storage buckets"
+  type        = bool
+  default     = false
+}
+
+variable "ssl_private_key" {
+  description = "SSL private key for custom certificates"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "ssl_certificate" {
+  description = "SSL certificate for custom certificates"
+  type        = string
+  default     = ""
+}
+
+variable "enable_http_redirect" {
+  description = "Enable HTTP to HTTPS redirect"
+  type        = bool
+  default     = true
+}
+
+# CDN caching variables
+variable "cdn_client_ttl" {
+  description = "Default client TTL for CDN"
+  type        = number
+  default     = 3600
+}
+
+variable "cdn_default_ttl" {
+  description = "Default TTL for CDN"
+  type        = number
+  default     = 3600
+}
+
+variable "cdn_max_ttl" {
+  description = "Maximum TTL for CDN"
+  type        = number
+  default     = 86400
+}
+
+variable "cdn_serve_while_stale" {
+  description = "Serve while stale for CDN"
+  type        = number
+  default     = 86400
+}
+
+variable "custom_response_headers" {
+  description = "Custom response headers for CDN"
+  type        = list(string)
+  default     = []
 }
 
 # ==============================================================================

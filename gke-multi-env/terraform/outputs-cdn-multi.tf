@@ -16,8 +16,8 @@ output "cdn_load_balancer_ip" {
 }
 
 output "cdn_url_map_name" {
-  description = "Name of the URL map for cache invalidation"
-  value       = google_compute_url_map.cdn_url_map.name
+  description = "Name of the Application Load Balancer URL map for cache invalidation"
+  value       = google_compute_url_map.cdn_url_map_alb.name
 }
 
 output "cdn_deployment_service_account" {
@@ -50,6 +50,6 @@ output "cdn_github_actions_config" {
     service_account = google_service_account.cdn_deploy.email
     workload_identity_provider = var.enable_cdn_workload_identity ? google_iam_workload_identity_pool_provider.cdn_github[0].name : "Not configured"
     buckets = { for site_key, site in var.cdn_sites : site_key => google_storage_bucket.cdn_sites[site_key].name }
-    url_map = google_compute_url_map.cdn_url_map.name
+    url_map = google_compute_url_map.cdn_url_map_alb.name
   }
 }
