@@ -61,6 +61,15 @@ resource "google_storage_bucket_iam_member" "cdn_bucket_public_read" {
   member = "allUsers"
 }
 
+# Grant dev-cdn-deploy-sa permissions to upload to perf buckets
+resource "google_storage_bucket_iam_member" "cdn_bucket_deploy_access" {
+  for_each = var.cdn_sites
+  
+  bucket = google_storage_bucket.cdn_sites[each.key].name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:dev-cdn-deploy-sa@${var.project_id}.iam.gserviceaccount.com"
+}
+
 # Backend buckets for Load Balancer
 resource "google_compute_backend_bucket" "cdn_backends" {
   for_each = var.cdn_sites

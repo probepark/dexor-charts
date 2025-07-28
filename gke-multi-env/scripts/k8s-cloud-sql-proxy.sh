@@ -10,6 +10,9 @@ RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# Store the script directory before any cd commands
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 # Default values
 ENV="${1:-dev}"
 LOCAL_PORT="${2:-3306}"
@@ -109,7 +112,7 @@ deploy_proxy() {
     fi
     
     # Generate YAML with actual values
-    cat ../k8s/cloud-sql-proxy.yaml | \
+    cat "$SCRIPT_DIR/../k8s/cloud-sql-proxy.yaml" | \
         sed "s/\${PROJECT_ID}/$PROJECT_ID/g" | \
         sed "s/\${CONNECTION_NAME}/$CONNECTION_NAME/g" | \
         kubectl apply -n "$NAMESPACE" -f -
@@ -134,7 +137,7 @@ delete_proxy() {
         NAMESPACE="default"
     fi
     
-    cat ../k8s/cloud-sql-proxy.yaml | \
+    cat "$SCRIPT_DIR/../k8s/cloud-sql-proxy.yaml" | \
         sed "s/\${PROJECT_ID}/$PROJECT_ID/g" | \
         sed "s/\${CONNECTION_NAME}/$CONNECTION_NAME/g" | \
         kubectl delete -n "$NAMESPACE" -f - || true
