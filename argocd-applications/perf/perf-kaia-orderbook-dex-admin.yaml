@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: perf-kaia-orderbook-dex-admin
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # ArgoCD Image Updater configuration
+    argocd-image-updater.argoproj.io/image-list: admin=asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry/kaia-orderbook-dex-admin:perf
+    argocd-image-updater.argoproj.io/admin.update-strategy: digest
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:probepark/dexor-charts.git
+    targetRevision: HEAD
+    path: charts/kaia-orderbook-dex-admin
+    helm:
+      valueFiles:
+        - values-perf.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kaia-dex-perf
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

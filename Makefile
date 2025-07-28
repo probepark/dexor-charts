@@ -116,9 +116,19 @@ deploy-images: docker-push-all helm-update-images ## Build, push all images and 
 
 # Core Deployment Commands
 .PHONY: deploy-core-contracts
-deploy-core-contracts: ## Deploy core contracts to Kairos testnet
+deploy-core-contracts: ## Deploy core contracts to Kairos testnet (dev)
 	@echo "🚀 Deploying contracts to Kairos testnet..."
 	@./scripts/deploy-to-kairos.sh
+
+.PHONY: deploy-core-contracts-qa
+deploy-core-contracts-qa: ## Deploy core contracts to Kairos testnet (QA)
+	@echo "🚀 Deploying contracts to Kairos testnet for QA..."
+	@./scripts/deploy-to-kairos.sh qa
+
+.PHONY: deploy-core-contracts-perf
+deploy-core-contracts-perf: ## Deploy core contracts to Kairos testnet (Performance)
+	@echo "🚀 Deploying contracts to Kairos testnet for Performance..."
+	@./scripts/deploy-to-kairos.sh perf
 
 .PHONY: sync-core-values
 sync-core-values: ## Sync deployed contract info to values-dev.yaml
@@ -152,6 +162,10 @@ deploy-token-bridge-dev: ## Deploy token bridge to dev environment
 .PHONY: deploy-token-bridge-qa
 deploy-token-bridge-qa: ## Deploy token bridge to QA environment
 	@$(MAKE) deploy-token-bridge ENV=qa
+
+.PHONY: deploy-token-bridge-perf
+deploy-token-bridge-perf: ## Deploy token bridge to Performance environment
+	@$(MAKE) deploy-token-bridge ENV=perf
 
 .PHONY: test-token-bridge
 test-token-bridge: ## Test token bridge Docker image without deployment

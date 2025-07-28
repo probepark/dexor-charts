@@ -1,0 +1,101 @@
+workspace = "perf"
+log_level = 2  # More detailed logging for performance analysis
+swagger = true
+cronjob = true
+datadog_agent_address = ""
+datadog_service_name = ""
+secret_manager_provider = "gcp"
+
+[server]
+api_prefix = "/api/v1"
+port = 8080
+read_timeout_in_second = 60    # Higher timeout for performance testing
+read_header_timeout_in_second = 20  # Higher timeout for performance testing
+idle_timeout_in_second = 120   # Higher timeout for performance testing
+cors_allowed_origins = ["https://perf.dexor.trade", "https://api-perf.dexor.trade", "https://admin-perf.dexor.trade"]
+
+[ws_server]
+port = 9090
+
+[gcp]
+project_id = "orderbook-dex-dev"
+secret_name = "perf-app-config"
+storage_bucket = "dex-images-perf"
+storage_base_url = "https://storage.googleapis.com"
+
+[database]
+driver = "mysql"
+# These will be loaded from GCP Secret Manager
+ro_db_dsn = ""
+rw_db_dsn = ""
+max_idle_conns = 50   # Higher for performance testing
+max_open_conns = 200  # Higher for performance testing
+conn_max_lifetime = 3600  # 1 hour connection lifetime
+conn_max_idle_time = 1800  # 30 minutes idle time
+
+[redis]
+# Will be loaded from GCP Secret Manager
+host = ""
+read_timeout = 5000   # Higher timeout for performance testing
+write_timeout = 5000  # Higher timeout for performance testing
+db_size = 4           # Larger database for performance testing
+pool_size = 100       # Larger connection pool
+min_idle_conns = 20   # Minimum idle connections
+
+[auth]
+sign_alg = "HS256"
+# Will be loaded from GCP Secret Manager
+sign_key = ""
+
+[crypto]
+alg = "AES-GCM"
+# Will be loaded from GCP Secret Manager
+key = ""
+
+[udf]
+supports_search = true
+supports_group_request = true   # Enable for performance testing
+supports_marks = true          # Enable for performance testing
+supports_timescale_marks = true # Enable for performance testing
+supports_time = true
+supported_resolutions = ["1", "5", "10", "30", "60", "240", "1D", "1W"]  # More resolutions for testing
+
+[sequencer]
+api_endpoint = "http://perf-kaia-orderbook-dex-core-nitro.kaia-dex-perf:8547"
+ws_endpoint = "ws://perf-kaia-orderbook-dex-core-nitro.kaia-dex-perf:8548"
+chain_id = 412346
+timeout = 30000       # 30 second timeout for performance testing
+retry_attempts = 5    # Retry attempts for resilience testing
+batch_size = 1000     # Larger batch size for performance
+
+[kaia_EN]
+api_endpoint = "https://archive-en-kairos.node.kaia.io"
+ws_endpoint = "wss://responsive-green-emerald.kaia-kairos.quiknode.pro/"
+timeout = 300000      # 5 minute timeout for performance testing
+sequencer_inbox_address = "0x9c8A370F2f36134BB30a35A6AaB3F3899310e533"
+max_connections = 50  # Higher connection limit for performance testing
+retry_attempts = 3    # Retry attempts for resilience
+
+[event]
+port = "8081"
+batch_size = 500      # Larger batch size for event processing
+buffer_size = 10000   # Larger buffer for performance testing
+worker_count = 10     # More workers for parallel processing
+
+# Performance testing specific configurations
+[performance]
+enable_metrics = true
+metrics_port = 9090
+enable_profiling = true
+profiling_port = 6060
+max_request_size = 104857600  # 100MB for large requests
+rate_limit_per_second = 10000 # Higher rate limit for load testing
+cache_ttl = 3600             # 1 hour cache TTL
+enable_compression = true
+compression_level = 6
+
+[monitoring]
+enable_health_check = true
+health_check_interval = 30  # 30 seconds
+enable_ready_check = true
+metrics_collection_interval = 10  # 10 seconds for detailed monitoring

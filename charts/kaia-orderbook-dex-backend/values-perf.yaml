@@ -1,0 +1,143 @@
+# Performance environment overrides for kaia-orderbook-dex-backend
+# Optimized for performance testing with higher resource allocations
+
+global:
+  imageRegistry: "asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry"
+nameOverride: perf-kaia-orderbook-dex-backend
+fullnameOverride: perf-kaia-orderbook-dex-backend
+# API Service Configuration
+api:
+  replicaCount: 2 # Higher replica count for performance testing
+  image:
+    repository: kaia-orderbook-dex-backend/api-app
+    tag: "perf"
+  service:
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+    wsPort: 9090
+    wsTargetPort: 9090
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-dev"
+      nginx.ingress.kubernetes.io/proxy-body-size: "100m" # Higher for performance testing
+      # CORS support
+      nginx.ingress.kubernetes.io/enable-cors: "true"
+      nginx.ingress.kubernetes.io/cors-allow-origin: "https://perf.dexor.trade,https://admin-perf.dexor.trade"
+      nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+      nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+      # WebSocket support
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+      # Performance optimizations
+      nginx.ingress.kubernetes.io/proxy-buffering: "on"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"
+    hosts:
+      - host: api-perf.dexor.trade
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: api-perf-dexor-trade-tls
+        hosts:
+          - api-perf.dexor.trade
+  resources:
+    limits:
+      cpu: 2000m # Higher CPU for performance testing
+      memory: 2Gi # Higher memory for performance testing
+    requests:
+      cpu: 1000m # Higher baseline requests
+      memory: 1Gi
+  # Performance-oriented environment variables
+  env:
+    - name: KAIA_ORDERBOOK_PHASE
+      value: "perf"
+    - name: CONFIG_FILE
+      value: "/app/config/perf.toml"
+    - name: DD_AGENT_HOST
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: DD_SERVICE
+      value: "kaia-orderbook-api"
+    - name: DD_ENV
+      value: "perf"
+    # Performance tuning
+    - name: GOMAXPROCS
+      value: "2"
+    - name: GOGC
+      value: "100"
+# Event Service Configuration
+event:
+  replicaCount: 2 # Higher replica count for performance testing
+  image:
+    repository: kaia-orderbook-dex-backend/event-app
+    tag: "perf"
+  resources:
+    limits:
+      cpu: 2000m # Higher CPU for performance testing
+      memory: 2Gi # Higher memory for performance testing
+    requests:
+      cpu: 1000m # Higher baseline requests
+      memory: 1Gi
+  env:
+    - name: KAIA_ORDERBOOK_PHASE
+      value: "perf"
+    - name: CONFIG_FILE
+      value: "/app/config/perf.toml"
+    - name: DD_AGENT_HOST
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: DD_SERVICE
+      value: "kaia-orderbook-event"
+    - name: DD_ENV
+      value: "perf"
+    # Performance tuning
+    - name: GOMAXPROCS
+      value: "2"
+    - name: GOGC
+      value: "100"
+# ServiceAccount
+serviceAccount:
+  create: true
+  annotations:
+    iam.gke.io/gcp-service-account: "kaia-dex-backend-sa@orderbook-dex-dev.iam.gserviceaccount.com"
+  name: "kaia-dex-backend-perf"
+# Pod Disruption Budget - enabled for performance testing
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+# Network Policy - disabled for performance testing simplicity
+networkPolicy:
+  enabled: false
+# Monitoring
+monitoring:
+  enabled: true # Enable for performance monitoring
+  serviceMonitor:
+    enabled: true
+    namespace: "monitoring"
+    interval: 15s # More frequent scraping for performance tests
+    scrapeTimeout: 10s
+# Performance-specific configurations
+performance:
+  # HPA for load testing
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  # Pod topology spread constraints for performance
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: DoNotSchedule
+environment:
+  phase: "perf"
+# Contract addresses (will be updated by deploy scripts)
+contracts:
+  rollup: "0xE7c1A5385EdAf0F31d24F1EaD04bd58A178A065a"
+  sequencerInbox: "0x9c8A370F2f36134BB30a35A6AaB3F3899310e533"

@@ -1,0 +1,308 @@
+# Performance environment values for kaia-orderbook-dex-core
+# Optimized for performance testing with higher resources and monitoring
+
+global:
+  imageRegistry: "asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry"
+nameOverride: perf-kaia-orderbook-dex-core
+fullnameOverride: perf-kaia-orderbook-dex-core
+nitroNode:
+  enabled: true
+  image:
+    repository: kaia-orderbook-dex-core
+    tag: "perf"
+    pullPolicy: Always
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 16Gi
+    requests:
+      cpu: 2000m
+      memory: 8Gi
+  persistence:
+    size: 500Gi # Larger storage for performance data
+  # Node selector and tolerations for sequencer pool
+  nodeSelector:
+    workload: "arbitrum-sequencer"
+    node-type: "sequencer"
+  tolerations:
+    - key: "workload"
+      operator: "Equal"
+      value: "sequencer"
+      effect: "NoSchedule"
+  # Sequencer mode - args will be generated from template
+  args: []
+  # Enable config file for sequencer mode
+  configFile: "/config/sequencer_config.json"
+  # Persistent chain path
+  persistentChain: "/data"
+  # WASM module root from deployment
+  wasmModuleRoot: "0x184884e1eb9fefdc158f6c8ac912bb183bf3cf83f0090317e0bc4ac5860baa39"
+  logLevel: 2 # More detailed logging for performance analysis
+  # Enable health check for sequencer mode
+  healthCheck:
+    enabled: true
+  env:
+    - name: DD_AGENT_HOST
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: DD_SERVICE
+      value: "kaia-orderbook-dex-core"
+    - name: DD_ENV
+      value: "perf"
+    # Performance tuning
+    - name: GOMAXPROCS
+      value: "4"
+    - name: GOGC
+      value: "100"
+  # Enable ingress for L2 RPC access
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: "200m" # Higher for performance testing
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+      cert-manager.io/cluster-issuer: "letsencrypt-dev"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      # WebSocket support
+      nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+      nginx.ingress.kubernetes.io/proxy-set-headers: |
+        Upgrade $http_upgrade;
+        Connection "upgrade";
+      # Performance optimizations
+      nginx.ingress.kubernetes.io/proxy-buffering: "on"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "64k"
+      nginx.ingress.kubernetes.io/worker-connections: "4096"
+    hosts:
+      - host: l2-rpc-perf.dexor.trade
+        paths:
+          - path: /
+            pathType: Prefix
+            port: http
+      - host: l2-ws-perf.dexor.trade
+        paths:
+          - path: /
+            pathType: Prefix
+            port: ws
+    tls:
+      - secretName: l2-rpc-perf-tls
+        hosts:
+          - l2-rpc-perf.dexor.trade
+      - secretName: l2-ws-perf-tls
+        hosts:
+          - l2-ws-perf.dexor.trade
+# Performance environment configuration
+environment:
+  phase: "perf"
+  parentChain:
+    chainId: 1001 # Kaia Kairos testnet
+    rpcUrl: "http://34.64.142.1:8551"
+  # Child chain configuration from deployment
+  childChain:
+    chainId: 412346 # Will be updated by deployment script
+    chainName: "Kaia Orderbook DEX Performance"
+  # Contract addresses from deployment (Performance specific - will be updated)
+  contracts:
+    rollup: "0xE7c1A5385EdAf0F31d24F1EaD04bd58A178A065a"
+    sequencerInbox: "0x9c8A370F2f36134BB30a35A6AaB3F3899310e533"
+    bridge: "0xfDA5182B166398Af3726541cbe9C3c82cC363f57"
+    inbox: "0xC51615b79B5AC38B229007953762F61d90fBadef"
+    outbox: ""
+    rollupEventInbox: ""
+    challengeManager: ""
+    adminProxy: ""
+    upgradeExecutor: "0x7D6511C2fF224Ffe30113Fd4D5Ec70EEBF07eEF6"
+    validatorWalletCreator: "0xE2A8D5059ADE7BBd6164983f71716576b0Aaeb0c"
+    stakeToken: "0x7F8d43f81C144CeDC85eD9728E49b05FCE30380b"
+# Enable comprehensive monitoring for performance testing
+monitoring:
+  enabled: true
+  prometheus:
+    port: 6060
+  metrics:
+    enabled: true
+    interval: "10s" # More frequent metrics collection
+# Performance-optimized sequencer configuration
+sequencer:
+  enabled: true
+  coordinatorUrl: "http://0.0.0.0:8547"
+  queueSize: 8192 # Larger queue for performance testing
+  maxBlockSpeed: "100ms" # Faster block production for load testing
+  redis:
+    enabled: false # Single sequencer in perf testing
+  batchPoster:
+    enabled: true
+    maxDelay: "10s" # Faster batch posting for performance
+    compressionLevel: 3 # Lower compression for speed
+    parentChainWallet:
+      privateKey: "49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1"
+  dataAvailability:
+    enabled: false # Onchain DA for performance testing
+# Performance-optimized Nitro configuration
+nitroConfig:
+  feed:
+    output:
+      enable: true
+      port: 9642
+  http:
+    port: 8547
+    api: ["eth", "net", "web3", "arb", "debug"] # Enable debug APIs for performance analysis
+    cors-domain: "*"
+    vhosts: "*"
+  ws:
+    port: 8548
+    api: ["eth", "net", "web3", "arb"]
+    origins: "*"
+  # Performance tuning
+  cache:
+    database: 2048 # 2GB cache
+    trie: 1024 # 1GB trie cache
+    gc: 512 # 512MB GC cache
+  txpool:
+    locals: ["0x74139D025E36500715DB586779D2c9Ac65da9fF1"]
+    nolocals: false
+    journal: "transactions.rlp"
+    rejournal: "1h"
+    pricelimit: 1
+    pricebump: 10
+    accountslots: 64 # Higher slots for performance testing
+    globalslots: 10240 # Higher global slots
+    accountqueue: 128
+    globalqueue: 5120
+# Service configuration with additional ports for monitoring
+service:
+  main:
+    type: ClusterIP
+    ports:
+      - name: http-rpc
+        port: 8547
+        targetPort: 8547
+      - name: ws-rpc
+        port: 8548
+        targetPort: 8548
+      - name: metrics
+        port: 6060
+        targetPort: 6060
+      - name: feed
+        port: 9642
+        targetPort: 9642
+      - name: pprof
+        port: 6061
+        targetPort: 6061
+# Configuration files for sequencer mode
+config:
+  generateSequencerConfig: true
+  files:
+    l2_chain_config.json: |
+      {
+        "chainId": 412346,
+        "homesteadBlock": 0,
+        "daoForkSupport": true,
+        "eip150Block": 0,
+        "eip150Hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "eip155Block": 0,
+        "eip158Block": 0,
+        "byzantiumBlock": 0,
+        "constantinopleBlock": 0,
+        "petersburgBlock": 0,
+        "istanbulBlock": 0,
+        "muirGlacierBlock": 0,
+        "berlinBlock": 0,
+        "londonBlock": 0,
+        "clique": {
+          "period": 0,
+          "epoch": 0
+        },
+        "arbitrum": {
+          "EnableArbOS": true,
+          "AllowDebugPrecompiles": true,
+          "DataAvailabilityCommittee": false,
+          "InitialArbOSVersion": 32,
+          "InitialChainOwner": "0xf07ade7aa7dd067b6e9426a38bd538c0025bc784",
+          "GenesisBlockNum": 0
+        }
+      }
+    l2_chain_info.json: |
+      [
+        {
+          "chain-name": "arb-dev-test",
+          "parent-chain-id": 1001,
+          "parent-chain-is-arbitrum": false,
+          "sequencer-url": "",
+          "secondary-forwarding-target": "",
+          "feed-url": "",
+          "secondary-feed-url": "",
+          "das-index-url": "",
+          "has-genesis-state": false,
+          "chain-config": {
+            "chainId": 412346,
+            "homesteadBlock": 0,
+            "daoForkSupport": true,
+            "eip150Block": 0,
+            "eip150Hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "eip155Block": 0,
+            "eip158Block": 0,
+            "byzantiumBlock": 0,
+            "constantinopleBlock": 0,
+            "petersburgBlock": 0,
+            "istanbulBlock": 0,
+            "muirGlacierBlock": 0,
+            "berlinBlock": 0,
+            "londonBlock": 0,
+            "clique": {
+              "period": 0,
+              "epoch": 0
+            },
+            "arbitrum": {
+              "EnableArbOS": true,
+              "AllowDebugPrecompiles": true,
+              "DataAvailabilityCommittee": false,
+              "InitialArbOSVersion": 32,
+              "InitialChainOwner": "0xf07ade7aa7dd067b6e9426a38bd538c0025bc784",
+              "GenesisBlockNum": 0
+            }
+          },
+          "rollup": {
+            "bridge": "0xfDA5182B166398Af3726541cbe9C3c82cC363f57",
+            "inbox": "0xC51615b79B5AC38B229007953762F61d90fBadef",
+            "sequencer-inbox": "0x9c8A370F2f36134BB30a35A6AaB3F3899310e533",
+            "deployed-at": 192032484,
+            "rollup": "0xE7c1A5385EdAf0F31d24F1EaD04bd58A178A065a",
+            "native-token": "0x0000000000000000000000000000000000000000",
+            "upgrade-executor": "0x7D6511C2fF224Ffe30113Fd4D5Ec70EEBF07eEF6",
+            "validator-wallet-creator": "0xE2A8D5059ADE7BBd6164983f71716576b0Aaeb0c",
+            "stake-token": "0x7F8d43f81C144CeDC85eD9728E49b05FCE30380b"
+          }
+        }
+      ]
+    deployment.json: |
+      {
+        "bridge": "0xfDA5182B166398Af3726541cbe9C3c82cC363f57",
+        "inbox": "0xC51615b79B5AC38B229007953762F61d90fBadef",
+        "sequencer-inbox": "0x9c8A370F2f36134BB30a35A6AaB3F3899310e533",
+        "deployed-at": 192032484,
+        "rollup": "0xE7c1A5385EdAf0F31d24F1EaD04bd58A178A065a",
+        "native-token": "0x0000000000000000000000000000000000000000",
+        "upgrade-executor": "0x7D6511C2fF224Ffe30113Fd4D5Ec70EEBF07eEF6",
+        "validator-wallet-creator": "0xE2A8D5059ADE7BBd6164983f71716576b0Aaeb0c",
+        "stake-token": "0x7F8d43f81C144CeDC85eD9728E49b05FCE30380b"
+      }
+# Performance testing specific configurations
+performance:
+  # Load testing support
+  loadTesting:
+    enabled: true
+    maxConnections: 10000
+    requestTimeout: "30s"
+  # Profiling enabled for performance analysis
+  profiling:
+    enabled: true
+    cpu: true
+    memory: true
+  # Enhanced logging for performance metrics
+  logging:
+    level: "info"
+    format: "json"
+    metrics: true

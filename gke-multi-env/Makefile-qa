@@ -1,39 +1,39 @@
 # QA Infrastructure Makefile Extension
 # This file contains QA-specific targets for database infrastructure
 
-.PHONY: qa-help qa-init qa-plan qa-apply qa-destroy qa-status qa-connections
+.PHONY: qa-help init-qa plan-qa apply-qa destroy-qa status-qa qa-connections
 
 # QA Infrastructure Management
 qa-help: ## Show QA infrastructure help
 	@echo "$(GREEN)QA Infrastructure Commands$(NC)"
 	@echo ""
 	@echo "$(YELLOW)QA Database Infrastructure:$(NC)"
-	@echo "  $(BLUE)make qa-init$(NC)        Initialize QA infrastructure"
-	@echo "  $(BLUE)make qa-plan$(NC)        Plan QA infrastructure changes"
-	@echo "  $(BLUE)make qa-apply$(NC)       Apply QA infrastructure"
-	@echo "  $(BLUE)make qa-destroy$(NC)     Destroy QA infrastructure"
-	@echo "  $(BLUE)make qa-status$(NC)      Show QA infrastructure status"
+	@echo "  $(BLUE)make init-qa$(NC)        Initialize QA infrastructure"
+	@echo "  $(BLUE)make plan-qa$(NC)        Plan QA infrastructure changes"
+	@echo "  $(BLUE)make apply-qa$(NC)       Apply QA infrastructure"
+	@echo "  $(BLUE)make destroy-qa$(NC)     Destroy QA infrastructure"
+	@echo "  $(BLUE)make status-qa$(NC)      Show QA infrastructure status"
 	@echo "  $(BLUE)make qa-connections$(NC) Show QA database connections"
 
-qa-init: ## Initialize QA infrastructure
+init-qa: ## Initialize QA infrastructure
 	@echo "$(BLUE)[INFO]$(NC) Initializing QA infrastructure..."
 	@cd terraform/qa-infra && terraform init
 
-qa-plan: qa-init ## Plan QA infrastructure changes
+plan-qa: init-qa ## Plan QA infrastructure changes
 	@echo "$(BLUE)[INFO]$(NC) Planning QA infrastructure..."
 	@cd terraform/qa-infra && terraform plan -var-file="../../environments/qa/terraform.tfvars"
 
-qa-apply: ## Apply QA infrastructure changes
+apply-qa: ## Apply QA infrastructure changes
 	@echo "$(YELLOW)[WARNING]$(NC) Deploying QA databases (MySQL and Redis)..."
 	@cd terraform/qa-infra && terraform apply -var-file="../../environments/qa/terraform.tfvars" -auto-approve
 
-qa-destroy: ## Destroy QA infrastructure
+destroy-qa: ## Destroy QA infrastructure
 	@echo "$(RED)[ERROR]$(NC) WARNING: This will destroy all QA databases!"
 	@echo "Type 'destroy-qa' to confirm: "
 	@read confirm && [ "$$confirm" = "destroy-qa" ] || (echo "Cancelled" && exit 1)
 	@cd terraform/qa-infra && terraform destroy -var-file="../../environments/qa/terraform.tfvars"
 
-qa-status: ## Show QA infrastructure status
+status-qa: ## Show QA infrastructure status
 	@echo "$(BLUE)[INFO]$(NC) QA Infrastructure Status:"
 	@cd terraform/qa-infra && terraform output -json 2>/dev/null | jq -r '. | to_entries[] | "\(.key): \(.value.value)"' || echo "QA infrastructure not deployed"
 
@@ -77,9 +77,10 @@ qa-deploy-core: ## Deploy core to QA namespace
 qa-deploy-all: qa-deploy-backend qa-deploy-frontend qa-deploy-core ## Deploy all services to QA
 
 # QA Workflow
-qa-workflow: ## Complete QA setup workflow
-	@echo "$(BLUE)[INFO]$(NC) Starting QA workflow..."
-	@echo "1. Ensure dev environment is deployed"
-	@echo "2. Copy environments/qa/terraform.tfvars.example to terraform.tfvars"
-	@echo "3. Run 'make qa-apply' to create databases"
-	@echo "4. Run 'make qa-deploy-all' to deploy applications"
+qa-workflow: init-qa plan-qa ## Complete QA setup workflow (init, plan)
+	@echo "$(BLUE)[INFO]$(NC) QA workflow completed!"
+	@echo ""
+	@echo "Next steps:"
+	@echo "1. Review the plan output above"
+	@echo "2. Run 'make apply-qa' to create databases"
+	@echo "3. Run 'make qa-deploy-all' to deploy applications"

@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: perf-kaia-orderbook-dex-core
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # ArgoCD Image Updater configuration
+    argocd-image-updater.argoproj.io/image-list: nitroNode=asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry/kaia-orderbook-dex-core:perf
+    argocd-image-updater.argoproj.io/nitroNode.update-strategy: digest
+    argocd-image-updater.argoproj.io/nitroNode.helm.image-name: nitroNode.image.name
+    argocd-image-updater.argoproj.io/nitroNode.helm.image-tag: nitroNode.image.tag
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:probepark/dexor-charts.git
+    targetRevision: HEAD
+    path: charts/kaia-orderbook-dex-core
+    helm:
+      valueFiles:
+        - values-perf.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kaia-dex-perf
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

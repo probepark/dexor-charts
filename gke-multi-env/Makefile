@@ -9,7 +9,7 @@
 .PHONY: logs-dev logs-prod clean-dev clean-prod dev-workflow prod-workflow
 .PHONY: validate-dev validate-prod check-requirements
 .PHONY: secrets-list-dev secrets-list-prod secrets-get-dev secrets-get-prod app-config-dev app-config-prod
-.PHONY: k8s-db-proxy-dev k8s-db-proxy-prod k8s-db-deploy-dev k8s-db-deploy-prod k8s-db-delete-dev k8s-db-delete-prod
+.PHONY: k8s-db-proxy-dev k8s-db-proxy-prod k8s-db-proxy-qa k8s-db-proxy-perf k8s-db-deploy-dev k8s-db-deploy-prod k8s-db-deploy-qa k8s-db-deploy-perf k8s-db-delete-dev k8s-db-delete-prod k8s-db-delete-qa k8s-db-delete-perf
 
 # Default environment
 ENV ?= dev
@@ -38,8 +38,9 @@ define log_error
 	echo "$(RED)[ERROR]$(NC) $(1)"
 endef
 
-# Include QA-specific targets
+# Include environment-specific targets
 -include Makefile-qa
+-include Makefile-perf
 
 # Default target
 help: ## Show this help message
@@ -48,6 +49,7 @@ help: ## Show this help message
 	echo "$(YELLOW)Usage:$(NC)"
 	echo "  make [target] ENV=[dev|prod]"
 	echo "  make qa-[target]        # For QA-specific commands"
+	echo "  make perf-[target]      # For Performance-specific commands"
 	echo ""
 	echo "$(YELLOW)Environment Setup:$(NC)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -E '(setup|init|check)' | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(BLUE)%-20s$(NC) %s\n", $$1, $$2}'
@@ -398,6 +400,14 @@ k8s-db-proxy-prod: kubectl-prod ## Connect to prod database via Kubernetes Cloud
 	$(call log_info,"Connecting to prod database via Kubernetes...")
 	@./scripts/k8s-cloud-sql-proxy.sh prod 3307 connect
 
+k8s-db-proxy-qa: kubectl-dev ## Connect to QA database via Kubernetes Cloud SQL Proxy (port 3308)
+	$(call log_info,"Connecting to QA database via Kubernetes...")
+	@./scripts/k8s-cloud-sql-proxy.sh qa 3308 connect
+
+k8s-db-proxy-perf: kubectl-dev ## Connect to Performance database via Kubernetes Cloud SQL Proxy (port 3309)
+	$(call log_info,"Connecting to Performance database via Kubernetes...")
+	@./scripts/k8s-cloud-sql-proxy.sh perf 3309 connect
+
 k8s-db-deploy-dev: kubectl-dev ## Deploy Cloud SQL Proxy to dev Kubernetes cluster
 	$(call log_info,"Deploying Cloud SQL Proxy to dev cluster...")
 	@./scripts/k8s-cloud-sql-proxy.sh dev 3306 deploy
@@ -406,6 +416,14 @@ k8s-db-deploy-prod: kubectl-prod ## Deploy Cloud SQL Proxy to prod Kubernetes cl
 	$(call log_info,"Deploying Cloud SQL Proxy to prod cluster...")
 	@./scripts/k8s-cloud-sql-proxy.sh prod 3307 deploy
 
+k8s-db-deploy-qa: kubectl-dev ## Deploy Cloud SQL Proxy to QA namespace
+	$(call log_info,"Deploying Cloud SQL Proxy to QA namespace...")
+	@./scripts/k8s-cloud-sql-proxy.sh qa 3308 deploy
+
+k8s-db-deploy-perf: kubectl-dev ## Deploy Cloud SQL Proxy to Performance namespace
+	$(call log_info,"Deploying Cloud SQL Proxy to Performance namespace...")
+	@./scripts/k8s-cloud-sql-proxy.sh perf 3309 deploy
+
 k8s-db-delete-dev: kubectl-dev ## Delete Cloud SQL Proxy from dev Kubernetes cluster
 	$(call log_info,"Deleting Cloud SQL Proxy from dev cluster...")
 	@./scripts/k8s-cloud-sql-proxy.sh dev 3306 delete
@@ -413,3 +431,11 @@ k8s-db-delete-dev: kubectl-dev ## Delete Cloud SQL Proxy from dev Kubernetes clu
 k8s-db-delete-prod: kubectl-prod ## Delete Cloud SQL Proxy from prod Kubernetes cluster
 	$(call log_info,"Deleting Cloud SQL Proxy from prod cluster...")
 	@./scripts/k8s-cloud-sql-proxy.sh prod 3307 delete
+
+k8s-db-delete-qa: kubectl-dev ## Delete Cloud SQL Proxy from QA namespace
+	$(call log_info,"Deleting Cloud SQL Proxy from QA namespace...")
+	@./scripts/k8s-cloud-sql-proxy.sh qa 3308 delete
+
+k8s-db-delete-perf: kubectl-dev ## Delete Cloud SQL Proxy from Performance namespace
+	$(call log_info,"Deleting Cloud SQL Proxy from Performance namespace...")
+	@./scripts/k8s-cloud-sql-proxy.sh perf 3309 delete

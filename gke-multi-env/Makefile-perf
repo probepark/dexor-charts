@@ -1,0 +1,139 @@
+# Performance Infrastructure Makefile Extension
+# This file contains Performance-specific targets for database infrastructure
+
+.PHONY: perf-help init-perf plan-perf apply-perf destroy-perf status-perf perf-connections
+
+# Performance Infrastructure Management
+perf-help: ## Show Performance infrastructure help
+	@echo "$(GREEN)Performance Infrastructure Commands$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Performance Database Infrastructure:$(NC)"
+	@echo "  $(BLUE)make init-perf$(NC)        Initialize Performance infrastructure"
+	@echo "  $(BLUE)make plan-perf$(NC)        Plan Performance infrastructure changes"
+	@echo "  $(BLUE)make apply-perf$(NC)       Apply Performance infrastructure"
+	@echo "  $(BLUE)make destroy-perf$(NC)     Destroy Performance infrastructure"
+	@echo "  $(BLUE)make status-perf$(NC)      Show Performance infrastructure status"
+	@echo "  $(BLUE)make perf-connections$(NC) Show Performance database connections"
+
+init-perf: ## Initialize Performance infrastructure
+	@echo "$(BLUE)[INFO]$(NC) Initializing Performance infrastructure..."
+	@cd terraform/perf-infra && terraform init
+
+plan-perf: init-perf ## Plan Performance infrastructure changes
+	@echo "$(BLUE)[INFO]$(NC) Planning Performance infrastructure..."
+	@cd terraform/perf-infra && terraform plan -var-file="../../environments/perf/terraform.tfvars"
+
+apply-perf: ## Apply Performance infrastructure changes
+	@echo "$(YELLOW)[WARNING]$(NC) Deploying Performance databases (MySQL and Redis)..."
+	@cd terraform/perf-infra && terraform apply -var-file="../../environments/perf/terraform.tfvars" -auto-approve
+
+destroy-perf: ## Destroy Performance infrastructure
+	@echo "$(RED)[ERROR]$(NC) WARNING: This will destroy all Performance databases!"
+	@echo "Type 'destroy-perf' to confirm: "
+	@read confirm && [ "$$confirm" = "destroy-perf" ] || (echo "Cancelled" && exit 1)
+	@cd terraform/perf-infra && terraform destroy -var-file="../../environments/perf/terraform.tfvars"
+
+status-perf: ## Show Performance infrastructure status
+	@echo "$(BLUE)[INFO]$(NC) Performance Infrastructure Status:"
+	@cd terraform/perf-infra && terraform output -json 2>/dev/null | jq -r '. | to_entries[] | "\(.key): \(.value.value)"' || echo "Performance infrastructure not deployed"
+
+perf-clean: ## Clean Performance terraform files
+	@echo "$(BLUE)[INFO]$(NC) Cleaning Performance terraform files..."
+	@cd terraform/perf-infra && rm -rf .terraform .terraform.lock.hcl terraform.tfstate*
+
+# Performance Namespace and Secrets Management
+perf-namespace-status: ## Check Performance namespace and secrets
+	@echo "$(BLUE)[INFO]$(NC) Checking Performance namespace..."
+	@kubectl get namespace kaia-dex-perf || echo "Namespace not found"
+	@echo ""
+	@echo "$(BLUE)[INFO]$(NC) Checking Performance secrets..."
+	@kubectl get secrets -n kaia-dex-perf | grep -E "(mysql|redis)" || echo "No database secrets found"
+
+perf-mysql-password: ## Get Performance MySQL password
+	@cd terraform/perf-infra && terraform output mysql_password 2>/dev/null || echo "Performance infrastructure not deployed"
+
+perf-redis-password: ## Get Performance Redis auth string
+	@cd terraform/perf-infra && terraform output redis_auth_string 2>/dev/null || echo "Performance infrastructure not deployed"
+
+# Performance Application Deployment
+perf-deploy-backend: ## Deploy backend to Performance namespace
+	@echo "$(BLUE)[INFO]$(NC) Deploying backend to Performance..."
+	@helm upgrade --install kaia-backend-perf charts/kaia-orderbook-dex-backend/ \
+		-f charts/kaia-orderbook-dex-backend/values-perf.yaml \
+		-n kaia-dex-perf --create-namespace
+
+perf-deploy-frontend: ## Deploy frontend to Performance namespace
+	@echo "$(BLUE)[INFO]$(NC) Deploying frontend to Performance..."
+	@helm upgrade --install kaia-frontend-perf charts/kaia-orderbook-dex-frontend/ \
+		-f charts/kaia-orderbook-dex-frontend/values-perf.yaml \
+		-n kaia-dex-perf --create-namespace
+
+perf-deploy-admin: ## Deploy admin to Performance namespace
+	@echo "$(BLUE)[INFO]$(NC) Deploying admin to Performance..."
+	@helm upgrade --install kaia-admin-perf charts/kaia-orderbook-dex-admin/ \
+		-f charts/kaia-orderbook-dex-admin/values-perf.yaml \
+		-n kaia-dex-perf --create-namespace
+
+perf-deploy-core: ## Deploy core to Performance namespace
+	@echo "$(BLUE)[INFO]$(NC) Deploying core to Performance..."
+	@helm upgrade --install kaia-core-perf charts/kaia-orderbook-dex-core/ \
+		-f charts/kaia-orderbook-dex-core/values-perf.yaml \
+		-n kaia-dex-perf --create-namespace
+
+perf-deploy-all: perf-deploy-backend perf-deploy-frontend perf-deploy-admin perf-deploy-core ## Deploy all services to Performance
+
+# Performance Load Testing Support
+perf-port-forward: ## Port forward to Performance core service
+	@echo "$(BLUE)[INFO]$(NC) Port forwarding to Performance core service..."
+	@kubectl port-forward -n kaia-dex-perf svc/perf-kaia-orderbook-dex-core-nitro 8547:8547
+
+perf-load-test-setup: ## Setup performance monitoring and load testing tools
+	@echo "$(BLUE)[INFO]$(NC) Setting up Performance monitoring..."
+	@kubectl apply -f - <<EOF
+	apiVersion: v1
+	kind: ConfigMap
+	metadata:
+	  name: perf-test-config
+	  namespace: kaia-dex-perf
+	data:
+	  test-scenarios.yaml: |
+	    scenarios:
+	      - name: concurrent-users
+	        duration: 300s
+	        users: 100
+	        ramp-up: 30s
+	      - name: heavy-load
+	        duration: 600s  
+	        users: 500
+	        ramp-up: 60s
+	      - name: stress-test
+	        duration: 1800s
+	        users: 1000
+	        ramp-up: 120s
+	EOF
+
+# Performance Monitoring
+perf-logs: ## View Performance environment logs
+	@echo "$(BLUE)[INFO]$(NC) Performance Environment Logs:"
+	@kubectl logs -n kaia-dex-perf -l app.kubernetes.io/name=kaia-orderbook-dex-backend --tail=50
+	@echo ""
+	@kubectl logs -n kaia-dex-perf -l app.kubernetes.io/name=kaia-orderbook-dex-core --tail=50
+
+perf-metrics: ## Show Performance database metrics
+	@echo "$(BLUE)[INFO]$(NC) Performance Database Metrics:"
+	@echo "MySQL Connections:"
+	@kubectl exec -n kaia-dex-perf deployment/kaia-backend-perf -- mysql -h $(shell cd terraform/perf-infra && terraform output -raw mysql_private_ip 2>/dev/null || echo "unknown") -u kaia_perf -p$(shell cd terraform/perf-infra && terraform output -raw mysql_password 2>/dev/null || echo "unknown") -e "SHOW STATUS LIKE 'Threads_connected';" 2>/dev/null || echo "MySQL not accessible"
+	@echo ""
+	@echo "Redis Info:"
+	@kubectl exec -n kaia-dex-perf deployment/kaia-backend-perf -- redis-cli -h $(shell cd terraform/perf-infra && terraform output -raw redis_host 2>/dev/null || echo "unknown") -a $(shell cd terraform/perf-infra && terraform output -raw redis_auth_string 2>/dev/null || echo "unknown") info memory 2>/dev/null || echo "Redis not accessible"
+
+# Performance Workflow
+perf-workflow: init-perf plan-perf ## Complete Performance setup workflow (init, plan)
+	@echo "$(BLUE)[INFO]$(NC) Performance workflow completed!"
+	@echo ""
+	@echo "Next steps:"
+	@echo "1. Review the plan output above"
+	@echo "2. Run 'make apply-perf' to create databases"
+	@echo "3. Run 'make perf-deploy-all' to deploy applications"
+	@echo "4. Run 'make perf-load-test-setup' to configure load testing"
+	@echo "5. Use 'make perf-metrics' to monitor performance"

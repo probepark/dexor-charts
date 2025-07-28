@@ -1,0 +1,122 @@
+# Performance environment values for kaia-orderbook-dex-admin
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  imageRegistry: "asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry"
+
+replicaCount: 2  # Higher replica count for performance testing
+
+image:
+  repository: kaia-orderbook-dex-admin
+  tag: "perf"
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-dev"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"  # Higher for performance testing
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "32k"  # Larger buffer
+    # WebSocket support
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/upgrade: "$http_upgrade"
+    nginx.ingress.kubernetes.io/connection: "$connection_upgrade"
+    # Performance optimizations
+    nginx.ingress.kubernetes.io/proxy-buffering: "on"
+    nginx.ingress.kubernetes.io/proxy-cache-valid: "200 302 5m"
+  hosts:
+    - host: admin-perf.dexor.trade
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: admin-perf-dexor-trade-tls
+      hosts:
+        - admin-perf.dexor.trade
+
+resources:
+  limits:
+    cpu: 1000m     # Higher CPU for performance testing
+    memory: 1Gi    # Higher memory for performance testing
+  requests:
+    cpu: 500m      # Higher baseline requests
+    memory: 512Mi
+
+autoscaling:
+  enabled: true    # Enable autoscaling for load testing
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Environment configuration
+environment:
+  phase: "perf"
+  apiUrl: "https://api-perf.dexor.trade/api/v1"
+  wsUrl: "wss://api-perf.dexor.trade/ws"
+  nextjsUrl: "https://admin-perf.dexor.trade"
+
+env:
+  - name: DD_AGENT_HOST
+    valueFrom:
+      fieldRef:
+        fieldPath: status.hostIP
+  - name: DD_SERVICE
+    value: "kaia-orderbook-dex-admin"
+  - name: DD_ENV
+    value: "perf"
+  # Performance tuning for Next.js
+  - name: NODE_ENV
+    value: "production"
+  - name: NODE_OPTIONS
+    value: "--max-old-space-size=1024"
+
+# ServiceAccount
+serviceAccount:
+  create: true
+  annotations:
+    iam.gke.io/gcp-service-account: "kaia-dex-admin-sa@orderbook-dex-dev.iam.gserviceaccount.com"
+  name: "perf-kaia-dex-admin"
+
+# Pod Disruption Budget - enabled for performance testing
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Pod topology spread constraints for load balancing
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: DoNotSchedule
+
+# Monitoring
+monitoring:
+  enabled: true  # Enable for performance monitoring
+  serviceMonitor:
+    enabled: true
+    namespace: "monitoring"
+    interval: 15s      # More frequent scraping for performance tests
+    scrapeTimeout: 10s
+
+# Next.js specific performance configurations
+nextjs:
+  # Build-time optimizations
+  buildOptimizations:
+    enableSWC: true
+    minimizer: true
+    splitChunks: true
+  
+  # Runtime optimizations
+  runtimeOptimizations:
+    enableGzip: true
+    enableBrotli: true
+    cacheControl: "public, max-age=31536000, immutable"

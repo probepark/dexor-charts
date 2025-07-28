@@ -23,9 +23,9 @@ fi
 
 # Check for environment argument
 ENV=${1:-dev}
-if [[ ! "$ENV" =~ ^(dev|qa)$ ]]; then
-    echo "Usage: $0 [dev|qa]"
-    echo "Environment '$ENV' is not valid. Only 'dev' or 'qa' are supported for auto-update."
+if [[ ! "$ENV" =~ ^(dev|qa|perf)$ ]]; then
+    echo "Usage: $0 [dev|qa|perf]"
+    echo "Environment '$ENV' is not valid. Only 'dev', 'qa', or 'perf' are supported for auto-update."
     exit 1
 fi
 
@@ -41,6 +41,11 @@ case $ENV in
         SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
         ;;
     qa)
+        DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0x49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1}"
+        OWNER_ADDRESS="${OWNER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
+        SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
+        ;;
+    perf)
         DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0x49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1}"
         OWNER_ADDRESS="${OWNER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
         SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"

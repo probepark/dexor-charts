@@ -1,0 +1,177 @@
+# Performance environment overrides for kaia-orderbook-dex-frontend
+# Optimized for performance testing with caching and load testing support
+
+global:
+  imageRegistry: "asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry"
+
+nameOverride: perf-kaia-orderbook-dex-frontend
+fullnameOverride: perf-kaia-orderbook-dex-frontend
+
+replicaCount: 3  # Higher replica count for load testing
+
+image:
+  repository: kaia-orderbook-dex-frontend
+  tag: "perf"
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-dev"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"  # Higher for performance testing
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "32k"  # Larger buffer for performance
+    # WebSocket support
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/upgrade: "$http_upgrade"
+    nginx.ingress.kubernetes.io/connection: "$connection_upgrade"
+    # Performance optimizations
+    nginx.ingress.kubernetes.io/proxy-buffering: "on"
+    nginx.ingress.kubernetes.io/proxy-cache-valid: "200 302 10m"
+    nginx.ingress.kubernetes.io/proxy-cache-valid-error: "404 1m"
+    # Rate limiting for load testing
+    nginx.ingress.kubernetes.io/rate-limit: "1000"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1s"
+  hosts:
+    - host: perf.dexor.trade
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: perf-dexor-trade-tls
+      hosts:
+        - perf.dexor.trade
+
+resources:
+  limits:
+    cpu: 500m      # Higher CPU for performance testing
+    memory: 512Mi  # Higher memory for performance testing
+  requests:
+    cpu: 200m      # Higher baseline requests
+    memory: 256Mi
+
+autoscaling:
+  enabled: true    # Enable autoscaling for load testing
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+env:
+  - name: DD_AGENT_HOST
+    valueFrom:
+      fieldRef:
+        fieldPath: status.hostIP
+  - name: DD_SERVICE
+    value: "kaia-orderbook-dex-frontend"
+  - name: DD_ENV
+    value: "perf"
+
+# Environment configuration
+environment:
+  phase: "perf"
+  apiUrl: "https://api-perf.dexor.trade/api/v1"
+  wsUrl: "wss://api-perf.dexor.trade/ws"
+
+# Build-time environment variables
+buildEnv:
+  VITE_ENV: "perf"
+  VITE_API: "https://api-perf.dexor.trade/api/v1"
+  VITE_WS_URL: "wss://api-perf.dexor.trade/ws"
+  # Performance optimizations
+  VITE_BUILD_ANALYZE: "false"
+  VITE_CHUNK_SIZE_WARNING_LIMIT: "1000"
+
+# ServiceAccount
+serviceAccount:
+  create: true
+  annotations:
+    iam.gke.io/gcp-service-account: "kaia-dex-frontend-sa@orderbook-dex-dev.iam.gserviceaccount.com"
+  name: "perf-kaia-dex-frontend"
+
+# Pod Disruption Budget - enabled for performance testing
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Performance-specific nginx configuration
+extraVolumes:
+  - name: nginx-performance-config
+    configMap:
+      name: nginx-performance-config
+
+extraVolumeMounts:
+  - name: nginx-performance-config
+    mountPath: /etc/nginx/conf.d/performance.conf
+    subPath: performance.conf
+
+# Performance-optimized nginx configuration
+nginxConfig:
+  performance.conf: |
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types
+        text/plain
+        text/css
+        text/xml
+        text/javascript
+        application/json
+        application/javascript
+        application/xml+rss
+        application/atom+xml
+        image/svg+xml;
+
+    # Caching for static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+    }
+
+    # Buffer sizes
+    client_body_buffer_size 128k;
+    client_max_body_size 20m;
+    client_header_buffer_size 32k;
+    large_client_header_buffers 4 32k;
+
+    # Connection limits
+    keepalive_timeout 30s;
+    keepalive_requests 1000;
+
+# Pod topology spread constraints for load balancing
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: DoNotSchedule
+
+# Monitoring
+monitoring:
+  enabled: true  # Enable for performance monitoring
+  serviceMonitor:
+    enabled: true
+    namespace: "monitoring"
+    interval: 15s      # More frequent scraping for performance tests
+    scrapeTimeout: 10s
+
+# Performance testing configurations
+performance:
+  # Cache settings
+  cache:
+    enabled: true
+    ttl: "1h"
+  
+  # CDN simulation (using nginx caching)
+  cdn:
+    enabled: true
+    staticAssetsCaching: true

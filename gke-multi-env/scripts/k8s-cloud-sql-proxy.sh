@@ -16,9 +16,9 @@ LOCAL_PORT="${2:-3306}"
 ACTION="${3:-connect}" # connect, deploy, delete
 
 # Validate environment
-if [[ "$ENV" != "dev" && "$ENV" != "prod" && "$ENV" != "qa" ]]; then
-    echo -e "${RED}Error: Environment must be 'dev', 'qa', or 'prod'${NC}"
-    echo "Usage: $0 [dev|qa|prod] [local_port] [connect|deploy|delete]"
+if [[ "$ENV" != "dev" && "$ENV" != "prod" && "$ENV" != "qa" && "$ENV" != "perf" ]]; then
+    echo -e "${RED}Error: Environment must be 'dev', 'qa', 'perf', or 'prod'${NC}"
+    echo "Usage: $0 [dev|qa|perf|prod] [local_port] [connect|deploy|delete]"
     exit 1
 fi
 
@@ -27,6 +27,8 @@ echo -e "${BLUE}Kubernetes Cloud SQL Proxy for ${ENV} environment${NC}"
 # Change to terraform directory to get outputs
 if [ "$ENV" == "qa" ]; then
     cd "$(dirname "$0")/../terraform/qa-infra"
+elif [ "$ENV" == "perf" ]; then
+    cd "$(dirname "$0")/../terraform/perf-infra"
 else
     cd "$(dirname "$0")/../terraform"
     terraform workspace select "$ENV" >/dev/null 2>&1
@@ -34,7 +36,7 @@ fi
 
 # Get project ID and connection name
 PROJECT_ID="orderbook-dex-dev"  # All environments use dev project
-if [ "$ENV" == "qa" ]; then
+if [ "$ENV" == "qa" ] || [ "$ENV" == "perf" ]; then
     CONNECTION_NAME=$(terraform output -raw mysql_connection_name 2>/dev/null || echo "")
 else
     CONNECTION_NAME=$(terraform output -raw database_connection_name 2>/dev/null || echo "")
@@ -50,8 +52,8 @@ echo -e "${GREEN}Connection Name: $CONNECTION_NAME${NC}"
 
 # Configure kubectl
 echo -e "${YELLOW}Configuring kubectl...${NC}"
-if [ "$ENV" == "qa" ]; then
-    # QA uses dev cluster
+if [ "$ENV" == "qa" ] || [ "$ENV" == "perf" ]; then
+    # QA and perf use dev cluster
     gcloud container clusters get-credentials "dev-gke-cluster" --region="asia-northeast3" --project="$PROJECT_ID"
 else
     gcloud container clusters get-credentials "${ENV}-gke-cluster" --region="asia-northeast3" --project="$PROJECT_ID"
@@ -77,6 +79,8 @@ create_service_account() {
     # Enable workload identity binding
     if [ "$ENV" == "qa" ]; then
         NAMESPACE="kaia-dex-qa"
+    elif [ "$ENV" == "perf" ]; then
+        NAMESPACE="kaia-dex-perf"
     else
         NAMESPACE="default"
     fi
@@ -98,6 +102,8 @@ deploy_proxy() {
     # Set namespace
     if [ "$ENV" == "qa" ]; then
         NAMESPACE="kaia-dex-qa"
+    elif [ "$ENV" == "perf" ]; then
+        NAMESPACE="kaia-dex-perf"
     else
         NAMESPACE="default"
     fi
@@ -122,6 +128,8 @@ delete_proxy() {
     # Set namespace
     if [ "$ENV" == "qa" ]; then
         NAMESPACE="kaia-dex-qa"
+    elif [ "$ENV" == "perf" ]; then
+        NAMESPACE="kaia-dex-perf"
     else
         NAMESPACE="default"
     fi
@@ -139,6 +147,8 @@ connect_proxy() {
     # Set namespace
     if [ "$ENV" == "qa" ]; then
         NAMESPACE="kaia-dex-qa"
+    elif [ "$ENV" == "perf" ]; then
+        NAMESPACE="kaia-dex-perf"
     else
         NAMESPACE="default"
     fi
@@ -172,6 +182,10 @@ connect_proxy() {
             DB_NAME="kaia_orderbook_qa"
             DB_USER="kaia_qa"
             DB_PASSWORD=$(kubectl get secret mysql-qa-secret -n "$NAMESPACE" -o jsonpath="{.data.mysql-password}" 2>/dev/null | base64 -d || echo "")
+        elif [ "$ENV" == "perf" ]; then
+            DB_NAME="kaia_orderbook_perf"
+            DB_USER="kaia_perf"
+            DB_PASSWORD=$(kubectl get secret mysql-perf-secret -n "$NAMESPACE" -o jsonpath="{.data.mysql-password}" 2>/dev/null | base64 -d || echo "")
         else
             DB_NAME="dex"
             DB_USER="klaytn"
