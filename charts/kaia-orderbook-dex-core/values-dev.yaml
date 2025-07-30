@@ -110,7 +110,7 @@ environment:
     sequencerInbox: "0x0e4029512C2a7893669632faE2e9973cD03975a1"
     bridge: "0x1b584BCc5359c84D8A26d4fEAAE5996aAD0541e3"
     inbox: "0x5660b1227683f589818c14959b2a88b864fB72a2"
-    outbox: "0xeE02cdE738071A12ae4c8c44E6a1D89A3780b972" # From deployment output
+    outbox: "0x3acdc976607334d77cebc6b00112f797f6dba788" # From deployment output
     rollupEventInbox: "0x7FbCc8caCA161CD9541D7700f55D21D164E58548" # From deployment output
     challengeManager: "0x64430eD79366B010aA2D56559722095B677059FC" # From deployment output
     adminProxy: "0xbCE3833f82FbfAf93685Acb243e6ff61e5DF528D" # From deployment output
