@@ -30,10 +30,7 @@ nitroNode:
       value: "sequencer"
       effect: "NoSchedule"
   # Sequencer mode - args will be generated from template
-  args: [
-    "--batch-poster.poll-interval=5s",
-    "--batch-poster.max-empty-batch-delay=30m0s"
-  ]
+  args: []
   # Enable config file for sequencer mode
   configFile: "/config/sequencer_config.json"
   # Persistent chain path
