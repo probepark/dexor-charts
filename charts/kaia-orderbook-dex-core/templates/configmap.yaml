@@ -35,8 +35,7 @@ data:
         "batch-poster": {
           "enable": {{ .Values.sequencer.batchPoster.enabled }},
           "max-delay": {{ .Values.sequencer.batchPoster.maxDelay | quote }},
-          "compression-level": {{ .Values.sequencer.batchPoster.compressionLevel | default 6 }},
-          "reorg-resistance-margin": {{ .Values.sequencer.batchPoster.reorgResistanceMargin | default "5m0s" }},
+          "compression-level": {{ .Values.sequencer.batchPoster.compressionLevel | default 6 }}{{- if .Values.sequencer.batchPoster.parentChainWallet }},{{- end }}
           {{- if .Values.sequencer.batchPoster.parentChainWallet }}
           "parent-chain-wallet": {
             "private-key": {{ .Values.sequencer.batchPoster.parentChainWallet.privateKey | quote }}
@@ -45,7 +44,7 @@ data:
         },
         "data-availability": {
           "enable": {{ .Values.sequencer.dataAvailability.enabled }},
-          "parent-chain-node-url": {{ .Values.environment.parentChain.rpcUrl | quote }}{{- if .Values.environment.contracts.sequencerInbox }}, {{- end }}
+          "parent-chain-node-url": {{ .Values.environment.parentChain.rpcUrl | quote }}{{- if .Values.environment.contracts.sequencerInbox }},{{- end }}
           {{- if .Values.environment.contracts.sequencerInbox }}
           "sequencer-inbox-address": {{ .Values.environment.contracts.sequencerInbox | quote }}
           {{- end }}
