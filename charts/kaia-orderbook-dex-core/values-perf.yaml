@@ -98,7 +98,6 @@ environment:
   phase: "perf"
   parentChain:
     chainId: 1001 # Kaia Kairos testnet
-    rpcUrl: "http://34.64.142.1:8551"
   # Child chain configuration from deployment
   childChain:
     chainId: 412346 # Will be updated by deployment script
@@ -134,7 +133,8 @@ sequencer:
     enabled: false # Single sequencer in perf testing
   batchPoster:
     enabled: true
-    maxDelay: "10s" # Faster batch posting for performance
+    maxDelay: "2h" # Increased to avoid conflicts with reorg-resistance-margin
+    reorgResistanceMargin: "5m" # Reduced from default 10m for faster posting
     compressionLevel: 3 # Lower compression for speed
     parentChainWallet:
       privateKey: "49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1"

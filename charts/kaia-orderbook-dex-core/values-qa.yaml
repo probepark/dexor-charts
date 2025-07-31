@@ -104,7 +104,6 @@ environment:
   phase: "qa"
   parentChain:
     chainId: 1001  # Kaia Kairos testnet
-    rpcUrl: "http://34.64.142.1:8551"
 
   # Child chain configuration from deployment
   childChain:
@@ -141,7 +140,8 @@ sequencer:
     enabled: false  # Single sequencer in QA
   batchPoster:
     enabled: true # Enable batch posting with private key
-    maxDelay: "30s"
+    maxDelay: "2h" # Increased from 30s to avoid conflicts with reorg-resistance-margin
+    reorgResistanceMargin: "5m" # Reduced from default 10m for faster posting
     compressionLevel: 6  # 0-9, where 6 is a good balance
     parentChainWallet:
       privateKey: "49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1"
