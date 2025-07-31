@@ -243,3 +243,6 @@ config:
         "validator-wallet-creator": "0xd54bEA42609092D3e7a41Cc51AE76E597Ca004e7",
         "stake-token": "0xD06F45B188D9ccAf1E525B23E2a564c0fa034e5B"
       }
+
+debugSidecar:
+  enabled: true

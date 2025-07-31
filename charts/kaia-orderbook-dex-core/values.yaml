@@ -291,6 +291,21 @@ monitoring:
     port: 6060
     path: /metrics
 
+# Debug Sidecar Configuration
+debugSidecar:
+  enabled: false
+  image:
+    repository: busybox
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
 # Service Account
 serviceAccount:
   create: true

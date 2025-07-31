@@ -162,6 +162,29 @@ spec:
               mountPath: /config
               readOnly: true
             {{- end }}
+        {{- if .Values.debugSidecar.enabled }}
+        - name: debug-sidecar
+          image: "{{ .Values.debugSidecar.image.repository }}:{{ .Values.debugSidecar.image.tag }}"
+          imagePullPolicy: {{ .Values.debugSidecar.image.pullPolicy }}
+          command: 
+            - sh
+            - -c
+            - |
+              echo "Debug sidecar ready. Main container data accessible at /data"
+              echo "This container will keep running even if main container fails"
+              echo "Use: kubectl exec -it <pod-name> -c debug-sidecar -- sh"
+              while true; do sleep 3600; done
+          resources:
+            {{- toYaml .Values.debugSidecar.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            {{- if .Values.nitroNode.configFile }}
+            - name: config
+              mountPath: /config
+              readOnly: true
+            {{- end }}
+        {{- end }}
       {{- with .Values.nitroNode.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
