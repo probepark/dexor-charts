@@ -139,7 +139,7 @@ validator:
 
   nodeSelector: {}
   tolerations: []
-  
+
   env:
     - name: DD_AGENT_HOST
       valueFrom:
@@ -149,7 +149,7 @@ validator:
       value: "kaia-orderbook-validator"
     - name: DD_ENV
       value: "dev"  # This will be overridden by environment-specific values files
-  
+
   # Default Pod Anti-Affinity to prevent multiple pods on the same node
   # This helps avoid PVC multi-attach errors for RWO volumes
   affinity:
@@ -208,7 +208,7 @@ environment:
   # Parent chain configuration
   parentChain:
     chainId: 1001  # Kaia Kairos testnet
-    rpcUrl: "https://archive-en-kairos.node.kaia.io"
+    rpcUrl: "https://public-en-kairos.node.kaia.io"
     wsUrl: "wss://archive-en-kairos.node.kaia.io/ws"
 
   # Child chain configuration

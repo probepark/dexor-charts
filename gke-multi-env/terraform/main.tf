@@ -135,6 +135,16 @@ variable "datadog_site" {
   default     = "datadoghq.com"
 }
 
+variable "nat_ip_count" {
+  description = "Number of static IPs to allocate for NAT gateway (0 for auto-allocation)"
+  type        = number
+  default     = 1
+  validation {
+    condition     = var.nat_ip_count >= 0 && var.nat_ip_count <= 10
+    error_message = "NAT IP count must be between 0 and 10."
+  }
+}
+
 # ==============================================================================
 # LOCAL VALUES
 # ==============================================================================
@@ -283,6 +293,15 @@ resource "google_service_networking_connection" "private_vpc_connection" {
   reserved_peering_ranges = [google_compute_global_address.private_service_access[0].name]
 }
 
+# Static IP for NAT Gateway
+resource "google_compute_address" "nat_ip" {
+  count        = var.nat_ip_count
+  name         = "${var.environment}-nat-ip-${count.index + 1}"
+  address_type = "EXTERNAL"
+  region       = var.region
+  description  = "Static IP for NAT gateway in ${var.environment} environment"
+}
+
 # Cloud Router for NAT
 resource "google_compute_router" "router" {
   name    = "${var.environment}-router"
@@ -295,8 +314,14 @@ resource "google_compute_router_nat" "nat" {
   name                               = "${var.environment}-nat"
   router                             = google_compute_router.router.name
   region                             = var.region
-  nat_ip_allocate_option             = "AUTO_ONLY"
+  nat_ip_allocate_option             = var.nat_ip_count > 0 ? "MANUAL_ONLY" : "AUTO_ONLY"
+  nat_ips                            = var.nat_ip_count > 0 ? google_compute_address.nat_ip[*].self_link : []
   source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+  
+  log_config {
+    enable = true
+    filter = "ERRORS_ONLY"
+  }
 }
 
 # Firewall rules
@@ -1417,6 +1442,11 @@ output "argocd_url" {
 output "nginx_ingress_ip" {
   description = "NGINX Ingress external IP"
   value       = "Check kubectl get svc -n nginx-ingress to get the external IP"
+}
+
+output "nat_gateway_ips" {
+  description = "Static IP addresses allocated for NAT gateway"
+  value       = var.nat_ip_count > 0 ? google_compute_address.nat_ip[*].address : ["Auto-allocated IPs - check with: gcloud compute routers get-nat-ip-info ${var.environment}-router --nat-name=${var.environment}-nat --region=${var.region} --project=${var.project_id}"]
 }
 
 output "kubectl_config_command" {
