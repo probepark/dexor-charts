@@ -95,7 +95,7 @@ nitroNode:
     disableChallenge: false  # Enable challenge capability
     stakerInterval: "30s"  # Check for new assertions every 30s
     makeAssertionInterval: "60s"  # Make assertions every 60s
-    strategy: "MakeNodes"  # Strategy for making assertions
+    strategy: "StakeLatest"  # Strategy for staking on latest assertions
     useSmartContractWallet: false
     confirmationBlocks: 12  # Wait for 12 blocks before considering L1 tx finalized
     bold:
