@@ -52,6 +52,11 @@ spec:
             - "--ws.origins=*"
             # Finality configuration for Kaia
             - "--execution.parent-chain-reader.use-finality-data=false"
+            {{- if not .Values.nitroNode.staker.enabled }}
+            # Disable BoLD when staker is disabled
+            - "--node.bold.enable=false"
+            - "--node.staker.enable=false"
+            {{- end }}
             {{- if .Values.nitroNode.args }}
             {{- toYaml .Values.nitroNode.args | nindent 12 }}
             {{- end }}
