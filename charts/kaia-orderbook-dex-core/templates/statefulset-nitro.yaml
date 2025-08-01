@@ -112,12 +112,16 @@ spec:
             {{- if .Values.nitroNode.staker.parentChainWallet.privateKey }}
             - "--node.staker.parent-chain-wallet.private-key={{ .Values.nitroNode.staker.parentChainWallet.privateKey }}"
             {{- end }}
+            {{- if .Values.nitroNode.staker.strategy }}
+            - "--node.staker.strategy={{ .Values.nitroNode.staker.strategy }}"
+            {{- end }}
             {{- if .Values.nitroNode.staker.dangerous.withoutBlockValidator }}
             - "--node.staker.dangerous.without-block-validator"
             {{- end }}
             {{- if .Values.nitroNode.staker.bold.rpcBlockNumber }}
             - "--node.bold.rpc-block-number={{ .Values.nitroNode.staker.bold.rpcBlockNumber }}"
             {{- end }}
+            - "--node.bold.strategy=MakeNodes"
             {{- if eq .Values.nitroNode.staker.parentChainReader.useFinality false }}
             - "--execution.parent-chain-reader.use-finality-data=false"
             {{- end }}
