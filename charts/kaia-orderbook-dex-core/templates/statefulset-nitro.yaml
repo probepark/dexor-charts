@@ -123,6 +123,8 @@ spec:
             {{- if eq .Values.nitroNode.staker.ensureRollupDeployment false }}
             - "--ensure-rollup-deployment=false"
             {{- end }}
+            - "--validator.l1-block-bound=latest"
+            - "--node.parent-chain-reader.safe-block-wait-time=0s"
             {{- end }}
             {{- if .Values.monitoring.enabled }}
             - "--metrics"
