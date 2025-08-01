@@ -195,7 +195,7 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
-            {{- if .Values.nitroNode.configFile }}
+            {{- if or .Values.nitroNode.configFile .Values.config.files }}
             - name: config
               mountPath: /config
               readOnly: true
@@ -217,7 +217,7 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
-            {{- if .Values.nitroNode.configFile }}
+            {{- if or .Values.nitroNode.configFile .Values.config.files }}
             - name: config
               mountPath: /config
               readOnly: true
@@ -236,7 +236,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       volumes:
-      {{- if .Values.nitroNode.configFile }}
+      {{- if or .Values.nitroNode.configFile .Values.config.files }}
         - name: config
           configMap:
             name: {{ include "kaia-orderbook-dex-core.fullname" . }}-config

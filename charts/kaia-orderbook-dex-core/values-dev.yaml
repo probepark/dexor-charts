@@ -31,8 +31,8 @@ nitroNode:
       effect: "NoSchedule"
   # Full mode - args will be generated from template
   args: []
-  # Config file disabled - all settings via args
-  configFile: ""
+  # Config file for chain info only - main settings via args
+  configFile: "/config/l2_chain_info.json"
   # Persistent chain path
   persistentChain: "/data"
   # WASM module root from deployment
