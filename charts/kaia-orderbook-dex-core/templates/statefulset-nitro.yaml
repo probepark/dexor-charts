@@ -50,6 +50,8 @@ spec:
             - "--ws.addr=0.0.0.0"
             - "--ws.port={{ .Values.nitroNode.service.wsPort }}"
             - "--ws.origins=*"
+            # Finality configuration for Kaia
+            - "--execution.parent-chain-reader.use-finality-data=false"
             {{- if .Values.nitroNode.args }}
             {{- toYaml .Values.nitroNode.args | nindent 12 }}
             {{- end }}
@@ -122,9 +124,6 @@ spec:
             - "--node.bold.rpc-block-number={{ .Values.nitroNode.staker.bold.rpcBlockNumber }}"
             {{- end }}
             - "--node.bold.strategy=MakeNodes"
-            {{- if eq .Values.nitroNode.staker.parentChainReader.useFinality false }}
-            - "--execution.parent-chain-reader.use-finality-data=false"
-            {{- end }}
             {{- if eq .Values.nitroNode.staker.ensureRollupDeployment false }}
             - "--ensure-rollup-deployment=false"
             {{- end }}
