@@ -54,17 +54,25 @@ data:
         },
         "staker": {
           "enable": {{ .Values.nitroNode.staker.enabled }},
+          {{- if .Values.nitroNode.staker.dangerous }}
           "dangerous": {
-            "without-block-validator": true
+            "without-block-validator": {{ .Values.nitroNode.staker.dangerous.withoutBlockValidator | default false }}
           },
+          {{- end }}
           "parent-chain-wallet": {
             "private-key": {{ .Values.nitroNode.staker.parentChainWallet.privateKey | quote }}
           },
+          {{- if .Values.environment.contracts.rollup }}
+          "rollup-address": {{ .Values.environment.contracts.rollup | quote }},
+          {{- end }}
           "disable-challenge": {{ .Values.nitroNode.staker.disableChallenge | default true }},
           "staker-interval": {{ .Values.nitroNode.staker.stakerInterval | default "10s" | quote }},
           "make-assertion-interval": {{ .Values.nitroNode.staker.makeAssertionInterval | default "10s" | quote }},
           "strategy": {{ .Values.nitroNode.staker.strategy | default "MakeNodes" | quote }},
-          "use-smart-contract-wallet": {{ .Values.nitroNode.staker.useSmartContractWallet | default true }}
+          "use-smart-contract-wallet": {{ .Values.nitroNode.staker.useSmartContractWallet | default true }}{{- if .Values.nitroNode.staker.confirmationBlocks }},{{- end }}
+          {{- if .Values.nitroNode.staker.confirmationBlocks }}
+          "confirmation-blocks": {{ .Values.nitroNode.staker.confirmationBlocks }}
+          {{- end }}
         }
         {{- end }}
       },

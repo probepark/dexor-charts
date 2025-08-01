@@ -33,11 +33,25 @@ spec:
           imagePullPolicy: {{ .Values.nitroNode.image.pullPolicy }}
           command: ["/usr/local/bin/nitro"]
           args:
-            {{- if .Values.nitroNode.configFile }}
-            - "--conf.file={{ .Values.nitroNode.configFile }}"
-            {{- end }}
+            # Core configuration
+            - "--chain.id={{ .Values.environment.childChain.chainId }}"
+            - "--parent-chain.id={{ .Values.environment.parentChain.chainId }}"
+            - "--parent-chain.connection.url={{ .Values.environment.parentChain.rpcUrl | default "https://public-en-kairos.node.kaia.io" }}"
+            - "--chain.info-files=/config/l2_chain_info.json"
             {{- if .Values.nitroNode.persistentChain }}
             - "--persistent.chain={{ .Values.nitroNode.persistentChain }}"
+            - "--persistent.global-config={{ .Values.nitroNode.persistentChain }}/config"
+            {{- end }}
+            # HTTP/WS configuration
+            - "--http.addr=0.0.0.0"
+            - "--http.port={{ .Values.nitroNode.service.httpPort }}"
+            - "--http.vhosts=*"
+            - "--http.corsdomain=*"
+            - "--ws.addr=0.0.0.0"
+            - "--ws.port={{ .Values.nitroNode.service.wsPort }}"
+            - "--ws.origins=*"
+            {{- if .Values.nitroNode.configFile }}
+            - "--conf.file={{ .Values.nitroNode.configFile }}"
             {{- end }}
             {{- if .Values.nitroNode.args }}
             {{- toYaml .Values.nitroNode.args | nindent 12 }}
@@ -75,6 +89,9 @@ spec:
             {{- if .Values.nitroConfig.dangerous.noL1Listener }}
             - "--node.dangerous.no-l1-listener"
             {{- end }}
+            {{- if .Values.nitroNode.dangerousDisableBlobReader }}
+            - "--node.dangerous.disable-blob-reader"
+            {{- end }}
             {{- if .Values.nitroNode.wasmModuleRoot }}
             - "--validation.wasm.allowed-wasm-module-roots={{ .Values.nitroNode.wasmModuleRoot }}"
             {{- end }}
@@ -87,6 +104,27 @@ spec:
             - "--node.batch-poster.enable=true"
             - "--node.batch-poster.max-delay={{ .Values.sequencer.batchPoster.maxDelay }}"
             - "--node.batch-poster.compression-level={{ .Values.sequencer.batchPoster.compressionLevel | default 6 }}"
+            {{- if .Values.sequencer.batchPoster.parentChainWallet.privateKey }}
+            - "--node.batch-poster.parent-chain-wallet.private-key={{ .Values.sequencer.batchPoster.parentChainWallet.privateKey }}"
+            {{- end }}
+            {{- end }}
+            {{- if .Values.nitroNode.staker.enabled }}
+            - "--node.staker.enable=true"
+            {{- if .Values.nitroNode.staker.parentChainWallet.privateKey }}
+            - "--node.staker.parent-chain-wallet.private-key={{ .Values.nitroNode.staker.parentChainWallet.privateKey }}"
+            {{- end }}
+            {{- if .Values.nitroNode.staker.dangerous.withoutBlockValidator }}
+            - "--node.staker.dangerous.without-block-validator"
+            {{- end }}
+            {{- if .Values.nitroNode.staker.bold.rpcBlockNumber }}
+            - "--node.bold.rpc-block-number={{ .Values.nitroNode.staker.bold.rpcBlockNumber }}"
+            {{- end }}
+            {{- if eq .Values.nitroNode.staker.parentChainReader.useFinality false }}
+            - "--execution.parent-chain-reader.use-finality-data=false"
+            {{- end }}
+            {{- if eq .Values.nitroNode.staker.ensureRollupDeployment false }}
+            - "--ensure-rollup-deployment=false"
+            {{- end }}
             {{- end }}
             {{- if .Values.monitoring.enabled }}
             - "--metrics"

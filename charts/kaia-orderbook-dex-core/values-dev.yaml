@@ -29,15 +29,17 @@ nitroNode:
       operator: "Equal"
       value: "sequencer"
       effect: "NoSchedule"
-  # Sequencer mode - args will be generated from template
+  # Full mode - args will be generated from template
   args: []
-  # Enable config file for sequencer mode
-  configFile: "/config/sequencer_config.json"
+  # Config file disabled - all settings via args
+  configFile: ""
   # Persistent chain path
   persistentChain: "/data"
   # WASM module root from deployment
   wasmModuleRoot: "0x184884e1eb9fefdc158f6c8ac912bb183bf3cf83f0090317e0bc4ac5860baa39"
   logLevel: 3
+  # Additional configuration for full mode
+  dangerousDisableBlobReader: true  # Disable blob reader as in docker script
   # Enable health check for sequencer mode
   healthCheck:
     enabled: true
@@ -85,21 +87,28 @@ nitroNode:
         hosts:
           - l2-ws-dev.dexor.trade
   staker:
-    enabled: false
+    enabled: true  # Enable validator/staker for full mode
     dangerous:
-      withoutBlockValidator: true
+      withoutBlockValidator: true  # Disable block validator (as in docker script)
     parentChainWallet:
       privateKey: "b00ed2290acbb3a03ce2e08ae15ffc32aa163789efdae5d1edd69ae05b14d12b"
-    disableChallenge: true
-    stakerInterval: "10s"
-    makeAssertionInterval: "10s"
-    strategy: "MakeNodes"
+    disableChallenge: false  # Enable challenge capability
+    stakerInterval: "30s"  # Check for new assertions every 30s
+    makeAssertionInterval: "60s"  # Make assertions every 60s
+    strategy: "MakeNodes"  # Strategy for making assertions
     useSmartContractWallet: false
+    confirmationBlocks: 12  # Wait for 12 blocks before considering L1 tx finalized
+    bold:
+      rpcBlockNumber: "latest"  # Use latest block instead of finalized
+    parentChainReader:
+      useFinality: false  # Disable finality data (Kaia doesn't support eth_getBlockByNumber with finalized)
+    ensureRollupDeployment: false  # Skip rollup deployment check
 # Development environment configuration
 environment:
   phase: "dev"
   parentChain:
     chainId: 1001 # Kaia Kairos testnet
+    rpcUrl: "https://public-en-kairos.node.kaia.io"
   # Child chain configuration from deployment
   childChain:
     chainId: 412346
