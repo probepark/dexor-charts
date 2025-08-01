@@ -123,7 +123,6 @@ spec:
             {{- if eq .Values.nitroNode.staker.ensureRollupDeployment false }}
             - "--ensure-rollup-deployment=false"
             {{- end }}
-            - "--validator.l1-block-bound=latest"
             - "--node.parent-chain-reader.safe-block-wait-time=0s"
             {{- end }}
             {{- if .Values.monitoring.enabled }}
@@ -204,7 +203,7 @@ spec:
         - name: debug-sidecar
           image: "{{ .Values.debugSidecar.image.repository }}:{{ .Values.debugSidecar.image.tag }}"
           imagePullPolicy: {{ .Values.debugSidecar.image.pullPolicy }}
-          command: 
+          command:
             - sh
             - -c
             - |
