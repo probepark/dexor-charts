@@ -52,6 +52,7 @@ spec:
             - "--ws.origins=*"
             # Finality configuration for Kaia
             - "--execution.parent-chain-reader.use-finality-data=false"
+            - "--node.parent-chain-reader.use-finality-data=false"
             {{- if not .Values.nitroNode.staker.enabled }}
             # Disable staker when not in full mode
             - "--node.staker.enable=false"
@@ -66,6 +67,7 @@ spec:
             - "--node.sequencer"
             - "--execution.sequencer.enable"
             - "--node.delayed-sequencer.enable"
+            - "--node.delayed-sequencer.use-merge-finality=false"
             - "--execution.rpc.gas-cap={{ .Values.sequencer.gasCap }}"
             - "--execution.rpc.tx-fee-cap={{ .Values.sequencer.txFeeCap }}"
             {{- if .Values.sequencer.redis.enabled }}
@@ -109,6 +111,15 @@ spec:
             - "--node.batch-poster.max-delay={{ .Values.sequencer.batchPoster.maxDelay }}"
             - "--node.batch-poster.compression-level={{ .Values.sequencer.batchPoster.compressionLevel | default 6 }}"
             - "--node.batch-poster.l1-block-bound=latest"
+            {{- if .Values.sequencer.batchPoster.dataAvailability }}
+            {{- if .Values.sequencer.batchPoster.dataAvailability.enable }}
+            - "--node.data-availability.enable={{ .Values.sequencer.batchPoster.dataAvailability.enable }}"
+            {{- end }}
+            {{- if .Values.sequencer.batchPoster.dataAvailability.restAggregator }}
+            - "--node.data-availability.rest-aggregator.enable={{ .Values.sequencer.batchPoster.dataAvailability.restAggregator.enable }}"
+            - "--node.data-availability.rest-aggregator.urls={{ .Values.sequencer.batchPoster.dataAvailability.restAggregator.urls }}"
+            {{- end }}
+            {{- end }}
             {{- if .Values.sequencer.batchPoster.parentChainWallet.privateKey }}
             - "--node.batch-poster.parent-chain-wallet.private-key={{ .Values.sequencer.batchPoster.parentChainWallet.privateKey }}"
             {{- end }}

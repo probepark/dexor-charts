@@ -146,8 +146,8 @@ sequencer:
     compressionLevel: 6 # 0-9, where 6 is a good balance
     parentChainWallet:
       privateKey: "49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1"
-  dataAvailability:
-    enabled: false # Onchain DA for dev
+    dataAvailability:
+      enable: false # Use onchain data availability for dev
 # Nitro specific configuration
 nitroConfig:
   feed:
