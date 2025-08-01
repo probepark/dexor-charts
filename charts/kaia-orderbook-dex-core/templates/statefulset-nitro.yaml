@@ -123,6 +123,7 @@ spec:
             {{- if eq .Values.nitroNode.staker.ensureRollupDeployment false }}
             - "--ensure-rollup-deployment=false"
             {{- end }}
+            {{- end }}
             {{- if .Values.monitoring.enabled }}
             - "--metrics"
             - "--metrics-server.addr=0.0.0.0"
