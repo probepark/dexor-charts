@@ -50,9 +50,6 @@ spec:
             - "--ws.addr=0.0.0.0"
             - "--ws.port={{ .Values.nitroNode.service.wsPort }}"
             - "--ws.origins=*"
-            {{- if .Values.nitroNode.configFile }}
-            - "--conf.file={{ .Values.nitroNode.configFile }}"
-            {{- end }}
             {{- if .Values.nitroNode.args }}
             {{- toYaml .Values.nitroNode.args | nindent 12 }}
             {{- end }}
