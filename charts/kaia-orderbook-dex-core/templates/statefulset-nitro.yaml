@@ -101,6 +101,7 @@ spec:
             - "--node.batch-poster.enable=true"
             - "--node.batch-poster.max-delay={{ .Values.sequencer.batchPoster.maxDelay }}"
             - "--node.batch-poster.compression-level={{ .Values.sequencer.batchPoster.compressionLevel | default 6 }}"
+            - "--node.batch-poster.l1-block-bound=latest"
             {{- if .Values.sequencer.batchPoster.parentChainWallet.privateKey }}
             - "--node.batch-poster.parent-chain-wallet.private-key={{ .Values.sequencer.batchPoster.parentChainWallet.privateKey }}"
             {{- end }}
