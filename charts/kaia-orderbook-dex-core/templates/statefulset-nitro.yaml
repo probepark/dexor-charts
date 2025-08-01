@@ -122,8 +122,8 @@ spec:
             {{- end }}
             {{- if .Values.nitroNode.staker.bold.rpcBlockNumber }}
             - "--node.bold.rpc-block-number={{ .Values.nitroNode.staker.bold.rpcBlockNumber }}"
-            {{- end }}
             - "--node.bold.strategy=MakeNodes"
+            {{- end }}
             {{- if eq .Values.nitroNode.staker.ensureRollupDeployment false }}
             - "--ensure-rollup-deployment=false"
             {{- end }}

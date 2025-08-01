@@ -87,7 +87,7 @@ nitroNode:
         hosts:
           - l2-ws-dev.dexor.trade
   staker:
-    enabled: true  # Enable validator/staker for full mode
+    enabled: false  # Disable validator/staker (set to true for full mode)
     dangerous:
       withoutBlockValidator: true  # Disable block validator (as in docker script)
     parentChainWallet:
