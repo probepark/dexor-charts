@@ -131,13 +131,13 @@ DEPLOYMENT_OUTPUT=$(mktemp)
 # Add host networking for Docker to access external URLs
 docker run --rm \
     --network host \
-    -e L1_RPC_URL="$L1_RPC_URL" \
-    -e L2_RPC_URL="$L2_RPC_URL" \
-    -e DEPLOYER_KEY="$DEPLOYER_KEY" \
+    -e BASECHAIN_RPC="$L1_RPC_URL" \
+    -e ORBIT_RPC="$L2_RPC_URL" \
+    -e BASECHAIN_DEPLOYER_KEY="$DEPLOYER_KEY" \
     -e ROLLUP_ADDRESS="$ROLLUP_ADDRESS" \
     -e INBOX_ADDRESS="$INBOX_ADDRESS" \
     $TOKEN_BRIDGE_IMAGE \
-    run create:token-bridge 2>&1 | tee $DEPLOYMENT_OUTPUT
+    run deploy:token-bridge-creator 2>&1 | tee $DEPLOYMENT_OUTPUT
 
 # Clean up port forwarding if used
 if [ ! -z "$PF_PID" ]; then
