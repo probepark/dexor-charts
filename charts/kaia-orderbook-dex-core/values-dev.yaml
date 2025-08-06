@@ -108,7 +108,6 @@ environment:
   phase: "dev"
   parentChain:
     chainId: 1001 # Kaia Kairos testnet
-    rpcUrl: "https://public-en-kairos.node.kaia.io"
   # Child chain configuration from deployment
   childChain:
     chainId: 412346
