@@ -53,7 +53,7 @@ supports_group_request = false
 supports_marks = false
 supports_timescale_marks = false
 supports_time = true
-supported_resolutions = ["1", "10", "60", "1D"]
+supported_resolutions = ["1", "5", "15", "30", "1h", "2h", "4h", "8h", "12h", "1D", "3D", "1W", "1M"]
 
 [sequencer]
 api_endpoint = "http://qa-kaia-orderbook-dex-core-nitro.kaia-dex-qa:8547"
