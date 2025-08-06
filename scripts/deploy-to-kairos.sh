@@ -23,9 +23,9 @@ fi
 
 # Check for environment argument
 ENV=${1:-dev}
-if [[ ! "$ENV" =~ ^(dev|qa|perf)$ ]]; then
-    echo "Usage: $0 [dev|qa|perf]"
-    echo "Environment '$ENV' is not valid. Only 'dev', 'qa', or 'perf' are supported for auto-update."
+if [[ ! "$ENV" =~ ^(dev|qa|perf|local)$ ]]; then
+    echo "Usage: $0 [dev|qa|perf|local]"
+    echo "Environment '$ENV' is not valid. Only 'dev', 'qa', 'perf', or 'local' are supported."
     exit 1
 fi
 
@@ -41,14 +41,22 @@ case $ENV in
         SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
         ;;
     qa)
-        DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0x49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1}"
-        OWNER_ADDRESS="${OWNER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
-        SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
+        # QA environment with different deployer key
+        DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0x11d00470a9a385668a65abc1a31a4a349301e5cd8217fdc33fb0eb6c6f971a8e}"
+        OWNER_ADDRESS="${OWNER_ADDRESS:-0x99edC6E05eFa0F046d881307ED05955077dbda3c}"
+        SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0x99edC6E05eFa0F046d881307ED05955077dbda3c}"
         ;;
     perf)
-        DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0x49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1}"
-        OWNER_ADDRESS="${OWNER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
-        SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0xf07ade7aa7dd067b6e9426a38bd538c0025bc784}"
+        # Performance environment with different deployer key
+        DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a}"
+        OWNER_ADDRESS="${OWNER_ADDRESS:-0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC}"
+        SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC}"
+        ;;
+    local)
+        # Local environment with unique deployer key
+        DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0xcc56168a0e292aad91d2f03a976da05910215a6d3cafff8bdad463736ac8f548}"
+        OWNER_ADDRESS="${OWNER_ADDRESS:-0x54C4C432da17B33401e1E85E17Df041BBb0A373c}"
+        SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0x54C4C432da17B33401e1E85E17Df041BBb0A373c}"
         ;;
 esac
 
@@ -161,7 +169,7 @@ if [ -f "$DEPLOYMENT_INFO_FILE" ]; then
     ROLLUP_ADDRESS=$(jq -r '.[0]."rollup"."rollup"' $DEPLOYMENT_INFO_FILE)
     BRIDGE_ADDRESS=$(jq -r '.[0]."rollup"."bridge"' $DEPLOYMENT_INFO_FILE)
     INBOX_ADDRESS=$(jq -r '.[0]."rollup"."inbox"' $DEPLOYMENT_INFO_FILE)
-    
+
     # Extract additional contract addresses
     OUTBOX_ADDRESS=$(jq -r '.[0]."rollup"."outbox" // empty' $DEPLOYMENT_INFO_FILE)
     ROLLUP_EVENT_INBOX_ADDRESS=$(jq -r '.[0]."rollup"."rollup-event-inbox" // empty' $DEPLOYMENT_INFO_FILE)
@@ -183,16 +191,12 @@ if [ -f "$DEPLOYMENT_INFO_FILE" ]; then
     echo ""
 
     # --- Automatic Update of Helm Values ---
-    echo "Step 8: Updating Helm values files for '$ENV' environment..."
-    
-    # Debug: Show extracted values
-    echo "Extracted contract addresses:"
-    echo "- Rollup:          $ROLLUP_ADDRESS"
-    echo "- Bridge:          $BRIDGE_ADDRESS"
-    echo "- Inbox:           $INBOX_ADDRESS"
-    echo "- Sequencer Inbox: $SEQUENCER_INBOX_ADDRESS"
-    echo ""
-    
+    if [ "$ENV" != "local" ]; then
+        echo "Step 8: Updating Helm values files for '$ENV' environment..."
+    else
+        echo "Step 8: Skipping Helm values update for local environment..."
+    fi
+
     # Validate that we have the essential addresses
     if [ -z "$ROLLUP_ADDRESS" ] || [ "$ROLLUP_ADDRESS" = "null" ]; then
         echo "❌ ERROR: Failed to extract rollup address from deployment info"
@@ -202,23 +206,29 @@ if [ -f "$DEPLOYMENT_INFO_FILE" ]; then
         echo "❌ ERROR: Failed to extract sequencer inbox address from deployment info"
         exit 1
     fi
+    if [ -z "$BRIDGE_ADDRESS" ] || [ "$BRIDGE_ADDRESS" = "null" ]; then
+        echo "❌ ERROR: Failed to extract bridge address from deployment info"
+        exit 1
+    fi
 
-    CORE_VALUES_FILE="charts/kaia-orderbook-dex-core/values-$ENV.yaml"
-    BACKEND_VALUES_FILE="charts/kaia-orderbook-dex-backend/values-$ENV.yaml"
+    # Only update Helm values for non-local environments
+    if [ "$ENV" != "local" ]; then
+        CORE_VALUES_FILE="charts/kaia-orderbook-dex-core/values-$ENV.yaml"
+        BACKEND_VALUES_FILE="charts/kaia-orderbook-dex-backend/values-$ENV.yaml"
 
-    # Update Core values - contracts are under environment key
-    if [ -f "$CORE_VALUES_FILE" ]; then
+        # Update Core values - contracts are under environment key
+        if [ -f "$CORE_VALUES_FILE" ]; then
         echo "Updating Core values file..."
-        
+
         # Update child chain ID
         yq e -i ".environment.childChain.chainId = $CHAIN_ID" "$CORE_VALUES_FILE"
-        
+
         # Update contract addresses
         yq e -i ".environment.contracts.rollup = \"$ROLLUP_ADDRESS\"" "$CORE_VALUES_FILE"
         yq e -i ".environment.contracts.bridge = \"$BRIDGE_ADDRESS\"" "$CORE_VALUES_FILE"
         yq e -i ".environment.contracts.inbox = \"$INBOX_ADDRESS\"" "$CORE_VALUES_FILE"
         yq e -i ".environment.contracts.sequencerInbox = \"$SEQUENCER_INBOX_ADDRESS\"" "$CORE_VALUES_FILE"
-        
+
         # Update additional contracts if they exist
         if [ -n "$OUTBOX_ADDRESS" ]; then
             yq e -i ".environment.contracts.outbox = \"$OUTBOX_ADDRESS\"" "$CORE_VALUES_FILE"
@@ -235,12 +245,12 @@ if [ -f "$DEPLOYMENT_INFO_FILE" ]; then
         yq e -i ".environment.contracts.upgradeExecutor = \"$UPGRADE_EXECUTOR_ADDRESS\"" "$CORE_VALUES_FILE"
         yq e -i ".environment.contracts.validatorWalletCreator = \"$VALIDATOR_WALLET_CREATOR_ADDRESS\"" "$CORE_VALUES_FILE"
         yq e -i ".environment.contracts.stakeToken = \"$STAKE_TOKEN_ADDRESS\"" "$CORE_VALUES_FILE"
-        
+
         echo "✅ Updated $CORE_VALUES_FILE"
-        
+
         # Update config.files section with deployment JSON files
         echo "Updating config.files section..."
-        
+
         # Update l2_chain_config.json
         if [ -f "./config/$ENV/l2_chain_config.json" ]; then
             echo "Processing l2_chain_config.json..."
@@ -254,7 +264,7 @@ if [ -f "$DEPLOYMENT_INFO_FILE" ]; then
             rm -f /tmp/l2_chain_config_formatted.json
             echo "✅ Updated l2_chain_config.json in config.files"
         fi
-        
+
         # Update l2_chain_info.json
         if [ -f "./config/$ENV/l2_chain_info.json" ]; then
             echo "Processing l2_chain_info.json..."
@@ -265,7 +275,7 @@ if [ -f "$DEPLOYMENT_INFO_FILE" ]; then
             rm -f /tmp/l2_chain_info_formatted.json
             echo "✅ Updated l2_chain_info.json in config.files"
         fi
-        
+
         # Update deployment.json
         if [ -f "./config/$ENV/deployment.json" ]; then
             echo "Processing deployment.json..."
@@ -276,7 +286,7 @@ if [ -f "$DEPLOYMENT_INFO_FILE" ]; then
             rm -f /tmp/deployment_formatted.json
             echo "✅ Updated deployment.json in config.files"
         fi
-        
+
     else
         echo "⚠️  Warning: $CORE_VALUES_FILE not found. Skipping update."
     fi
@@ -285,6 +295,7 @@ if [ -f "$DEPLOYMENT_INFO_FILE" ]; then
     if [ -f "$BACKEND_VALUES_FILE" ]; then
         yq e -i ".contracts.rollup = \"$ROLLUP_ADDRESS\"" "$BACKEND_VALUES_FILE"
         yq e -i ".contracts.sequencerInbox = \"$SEQUENCER_INBOX_ADDRESS\"" "$BACKEND_VALUES_FILE"
+        yq e -i ".contracts.bridge = \"$BRIDGE_ADDRESS\"" "$BACKEND_VALUES_FILE"
         echo "✅ Updated $BACKEND_VALUES_FILE"
     else
         echo "⚠️  Warning: $BACKEND_VALUES_FILE not found. Skipping update."
@@ -293,20 +304,22 @@ if [ -f "$DEPLOYMENT_INFO_FILE" ]; then
     # Update Backend config TOML file
     BACKEND_CONFIG_FILE="charts/kaia-orderbook-dex-backend/config/$ENV.toml"
     if [ -f "$BACKEND_CONFIG_FILE" ]; then
-        # Use sed to update the sequencer_inbox_address in the [kaia_EN] section
+        # Use sed to update the sequencer_inbox_address and bridge_address in the [kaia_EN] section
         sed -i.bak "s/^sequencer_inbox_address = .*/sequencer_inbox_address = \"$SEQUENCER_INBOX_ADDRESS\"/" "$BACKEND_CONFIG_FILE"
+        sed -i.bak "s/^bridge_address = .*/bridge_address = \"$BRIDGE_ADDRESS\"/" "$BACKEND_CONFIG_FILE"
         rm -f "${BACKEND_CONFIG_FILE}.bak"  # Remove backup file
-        echo "✅ Updated sequencer_inbox_address in $BACKEND_CONFIG_FILE"
+        echo "✅ Updated sequencer_inbox_address and bridge_address in $BACKEND_CONFIG_FILE"
     else
         echo "⚠️  Warning: $BACKEND_CONFIG_FILE not found. Skipping update."
     fi
 
-    echo ""
-    echo "Helm values and backend config updated successfully!"
-    echo ""
-    echo "Next steps:"
-    echo "1. Commit the updated values-$ENV.yaml files and config/$ENV.toml to your Git repository."
-    echo "2. ArgoCD will automatically sync the changes to the '$ENV' environment."
+        echo ""
+        echo "Helm values and backend config updated successfully!"
+        echo ""
+        echo "Next steps:"
+        echo "1. Commit the updated values-$ENV.yaml files and config/$ENV.toml to your Git repository."
+        echo "2. ArgoCD will automatically sync the changes to the '$ENV' environment."
+    fi  # End of Helm values update section
 
 else
     echo "❌ ERROR: Deployment failed - $DEPLOYMENT_INFO_FILE not found"
