@@ -58,7 +58,7 @@ supports_group_request = true   # Enable for performance testing
 supports_marks = true          # Enable for performance testing
 supports_timescale_marks = true # Enable for performance testing
 supports_time = true
-supported_resolutions = ["1m", "5m", "15m", "30m", "1h", "2h", "4h", "8h", "12h", "1D", "3D", "1W", "1M"]
+supported_resolutions = ["1", "5", "15", "30", "60", "120", "240", "480", "720", "1D", "3D", "1W", "1M"]
 
 [sequencer]
 api_endpoint = "http://perf-kaia-orderbook-dex-core-nitro.kaia-dex-perf:8547"
