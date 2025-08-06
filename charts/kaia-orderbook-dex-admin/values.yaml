@@ -6,7 +6,7 @@ global:
   imageRegistry: ""
   imagePullSecrets: []
 
-replicaCount: 2
+replicaCount: 1
 
 image:
   repository: kaia-orderbook-dex-admin
