@@ -3,18 +3,14 @@
 
 global:
   imageRegistry: "asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry"
-
 nameOverride: qa-kaia-orderbook-dex-core
 fullnameOverride: qa-kaia-orderbook-dex-core
-
 nitroNode:
   enabled: true
-
   image:
     repository: kaia-orderbook-dex-core
     tag: "qa"
     pullPolicy: Always
-
   resources:
     limits:
       cpu: 4000m
@@ -22,35 +18,26 @@ nitroNode:
     requests:
       cpu: 2000m
       memory: 8Gi
-
   persistence:
-    size: 200Gi  # Increased for sequencer mode
-
+    size: 200Gi # Increased for sequencer mode
   # Node selector and tolerations for sequencer pool
   nodeSelector:
     workload: "arbitrum-sequencer"
     node-type: "sequencer"
-
   tolerations:
     - key: "workload"
       operator: "Equal"
       value: "sequencer"
       effect: "NoSchedule"
-
   # Sequencer mode - args will be generated from template
   args: []
-
   # Enable config file for sequencer mode
   configFile: "/config/sequencer_config.json"
-
   # Persistent chain path
   persistentChain: "/data"
-
   # WASM module root from deployment
   wasmModuleRoot: "0x184884e1eb9fefdc158f6c8ac912bb183bf3cf83f0090317e0bc4ac5860baa39"
-
   logLevel: 3
-
   # Enable health check for sequencer mode
   healthCheck:
     enabled: true
@@ -63,7 +50,6 @@ nitroNode:
       value: "kaia-orderbook-dex-core"
     - name: DD_ENV
       value: "qa"
-
   # Enable ingress for L2 RPC access
   ingress:
     enabled: true
@@ -98,38 +84,33 @@ nitroNode:
       - secretName: l2-ws-qa-tls
         hosts:
           - l2-ws-qa.dexor.trade
-
 # QA environment configuration
 environment:
   phase: "qa"
   parentChain:
-    chainId: 1001  # Kaia Kairos testnet
-
+    chainId: 1001 # Kaia Kairos testnet
   # Child chain configuration from deployment
   childChain:
     chainId: 412346
     chainName: "Kaia Orderbook DEX QA"
-
   # Contract addresses from deployment (QA specific)
   contracts:
-    rollup: "0x59A8f3a44BBDce8ce6DA7C8550061f79FaaEC26C"
-    sequencerInbox: "0x39443062235E8EBD57CD6D9f396dC345e13c05DE"
-    bridge: "0xcF92D3160498f7492e16A3fFb3358a82C8eB3e77"
-    inbox: "0x90d29745472126c9E8cd6c83708C84704099007C"
+    rollup: "0xFe046eA20991fB293d595F849088F209f299d4ea"
+    sequencerInbox: "0x0D2E1e580c700a0de43FdB5dAbAe642B9c80BCD9"
+    bridge: "0xA26Ff670619228DC0B90D766B40494b5DAa795ae"
+    inbox: "0xfdA541dF56d717F2Abc879281d452a99586b305a"
     outbox: "0xa54f39Ab9C60d548bB731790101Fda788040692F"
     rollupEventInbox: "0xbED8ee65DCF27B19Fa6a0c6b06d3b62b76227a72"
     challengeManager: "0xA77F397Fb6d40b982FCEF796490eEF13c7909ab6"
     adminProxy: "0xB6489f2EA810bE16b99F673eB0be54914f8dC6a9"
-    upgradeExecutor: "0xB6489f2EA810bE16b99F673eB0be54914f8dC6a9"
-    validatorWalletCreator: "0xECc9462e25C54561e39fa0a33f4a13F67F00AB61"
-    stakeToken: "0xBA7B2F7466888ecb05Af3281687E62813f43b8E6"
-
+    upgradeExecutor: "0x011121998801350918727d099bA378dc762398BE"
+    validatorWalletCreator: "0x966a477B24abE72Fa7C4a2c9D59FC988E26AACad"
+    stakeToken: "0xb8e4feD0ff44BEC05cf2d8E83E499e34483fBFAd"
 # Enable monitoring in QA for debugging
 monitoring:
   enabled: true
   prometheus:
     port: 6060
-
 # Enable sequencer features
 sequencer:
   enabled: true
@@ -137,24 +118,22 @@ sequencer:
   queueSize: 4096
   maxBlockSpeed: "250ms"
   redis:
-    enabled: false  # Single sequencer in QA
+    enabled: false # Single sequencer in QA
   batchPoster:
     enabled: true # Enable batch posting with private key
     maxDelay: "2h" # Increased from 30s to avoid conflicts with reorg-resistance-margin
     reorgResistanceMargin: "5m" # Reduced from default 10m for faster posting
-    compressionLevel: 6  # 0-9, where 6 is a good balance
+    compressionLevel: 6 # 0-9, where 6 is a good balance
     parentChainWallet:
       privateKey: "49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1"
   dataAvailability:
-    enabled: false  # Onchain DA for QA
-
+    enabled: false # Onchain DA for QA
 # Nitro specific configuration
 nitroConfig:
   feed:
     output:
       enable: true
       port: 9642
-
 # Service configuration
 service:
   main:
@@ -172,13 +151,39 @@ service:
       - name: feed
         port: 9642
         targetPort: 9642
-
 # Configuration files for sequencer mode
 config:
   generateSequencerConfig: true
   files:
     l2_chain_config.json: |
-      {"chainId":412346,"homesteadBlock":0,"daoForkSupport":true,"eip150Block":0,"eip150Hash":"0x0000000000000000000000000000000000000000000000000000000000000000","eip155Block":0,"eip158Block":0,"byzantiumBlock":0,"constantinopleBlock":0,"petersburgBlock":0,"istanbulBlock":0,"muirGlacierBlock":0,"berlinBlock":0,"londonBlock":0,"clique":{"period":0,"epoch":0},"arbitrum":{"EnableArbOS":true,"AllowDebugPrecompiles":true,"DataAvailabilityCommittee":false,"InitialArbOSVersion":32,"InitialChainOwner":"0x74139D025E36500715DB586779D2c9Ac65da9fF1","GenesisBlockNum":0}}
+      {
+        "chainId": 412346,
+        "homesteadBlock": 0,
+        "daoForkSupport": true,
+        "eip150Block": 0,
+        "eip150Hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "eip155Block": 0,
+        "eip158Block": 0,
+        "byzantiumBlock": 0,
+        "constantinopleBlock": 0,
+        "petersburgBlock": 0,
+        "istanbulBlock": 0,
+        "muirGlacierBlock": 0,
+        "berlinBlock": 0,
+        "londonBlock": 0,
+        "clique": {
+          "period": 0,
+          "epoch": 0
+        },
+        "arbitrum": {
+          "EnableArbOS": true,
+          "AllowDebugPrecompiles": true,
+          "DataAvailabilityCommittee": false,
+          "InitialArbOSVersion": 32,
+          "InitialChainOwner": "0x99edC6E05eFa0F046d881307ED05955077dbda3c",
+          "GenesisBlockNum": 0
+        }
+      }
     l2_chain_info.json: |
       [
         {
@@ -215,32 +220,32 @@ config:
               "AllowDebugPrecompiles": true,
               "DataAvailabilityCommittee": false,
               "InitialArbOSVersion": 32,
-              "InitialChainOwner": "0x74139D025E36500715DB586779D2c9Ac65da9fF1",
+              "InitialChainOwner": "0x99edC6E05eFa0F046d881307ED05955077dbda3c",
               "GenesisBlockNum": 0
             }
           },
           "rollup": {
-            "bridge": "0xcF92D3160498f7492e16A3fFb3358a82C8eB3e77",
-            "inbox": "0x90d29745472126c9E8cd6c83708C84704099007C",
-            "sequencer-inbox": "0x39443062235E8EBD57CD6D9f396dC345e13c05DE",
-            "deployed-at": 189180824,
-            "rollup": "0x59A8f3a44BBDce8ce6DA7C8550061f79FaaEC26C",
+            "bridge": "0xA26Ff670619228DC0B90D766B40494b5DAa795ae",
+            "inbox": "0xfdA541dF56d717F2Abc879281d452a99586b305a",
+            "sequencer-inbox": "0x0D2E1e580c700a0de43FdB5dAbAe642B9c80BCD9",
+            "deployed-at": 192818283,
+            "rollup": "0xFe046eA20991fB293d595F849088F209f299d4ea",
             "native-token": "0x0000000000000000000000000000000000000000",
-            "upgrade-executor": "0xB6489f2EA810bE16b99F673eB0be54914f8dC6a9",
-            "validator-wallet-creator": "0xECc9462e25C54561e39fa0a33f4a13F67F00AB61",
-            "stake-token": "0xBA7B2F7466888ecb05Af3281687E62813f43b8E6"
+            "upgrade-executor": "0x011121998801350918727d099bA378dc762398BE",
+            "validator-wallet-creator": "0x966a477B24abE72Fa7C4a2c9D59FC988E26AACad",
+            "stake-token": "0xb8e4feD0ff44BEC05cf2d8E83E499e34483fBFAd"
           }
         }
       ]
     deployment.json: |
       {
-        "bridge": "0xcF92D3160498f7492e16A3fFb3358a82C8eB3e77",
-        "inbox": "0x90d29745472126c9E8cd6c83708C84704099007C",
-        "sequencer-inbox": "0x39443062235E8EBD57CD6D9f396dC345e13c05DE",
-        "deployed-at": 189180824,
-        "rollup": "0x59A8f3a44BBDce8ce6DA7C8550061f79FaaEC26C",
+        "bridge": "0xA26Ff670619228DC0B90D766B40494b5DAa795ae",
+        "inbox": "0xfdA541dF56d717F2Abc879281d452a99586b305a",
+        "sequencer-inbox": "0x0D2E1e580c700a0de43FdB5dAbAe642B9c80BCD9",
+        "deployed-at": 192818283,
+        "rollup": "0xFe046eA20991fB293d595F849088F209f299d4ea",
         "native-token": "0x0000000000000000000000000000000000000000",
-        "upgrade-executor": "0xB6489f2EA810bE16b99F673eB0be54914f8dC6a9",
-        "validator-wallet-creator": "0xECc9462e25C54561e39fa0a33f4a13F67F00AB61",
-        "stake-token": "0xBA7B2F7466888ecb05Af3281687E62813f43b8E6"
+        "upgrade-executor": "0x011121998801350918727d099bA378dc762398BE",
+        "validator-wallet-creator": "0x966a477B24abE72Fa7C4a2c9D59FC988E26AACad",
+        "stake-token": "0xb8e4feD0ff44BEC05cf2d8E83E499e34483fBFAd"
       }

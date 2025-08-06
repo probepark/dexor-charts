@@ -3,25 +3,20 @@
 
 global:
   imageRegistry: "asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry"
-
 nameOverride: qa-kaia-orderbook-dex-backend
 fullnameOverride: qa-kaia-orderbook-dex-backend
-
 # API Service Configuration
 api:
   replicaCount: 1
-
   image:
     repository: kaia-orderbook-dex-backend/api-app
     tag: "qa"
-
   service:
     type: ClusterIP
     port: 8080
     targetPort: 8080
     wsPort: 9090
     wsTargetPort: 9090
-
   ingress:
     enabled: true
     className: "nginx"
@@ -45,7 +40,6 @@ api:
       - secretName: api-qa-dexor-trade-tls
         hosts:
           - api-qa.dexor.trade
-
   resources:
     limits:
       cpu: 1000m
@@ -53,7 +47,6 @@ api:
     requests:
       cpu: 500m
       memory: 512Mi
-
   env:
     - name: KAIA_ORDERBOOK_PHASE
       value: "qa"
@@ -70,11 +63,9 @@ api:
 # Event Service Configuration
 event:
   replicaCount: 1
-
   image:
     repository: kaia-orderbook-dex-backend/event-app
     tag: "qa"
-
   resources:
     limits:
       cpu: 1000m
@@ -82,7 +73,6 @@ event:
     requests:
       cpu: 500m
       memory: 512Mi
-
   env:
     - name: KAIA_ORDERBOOK_PHASE
       value: "qa"
@@ -96,31 +86,29 @@ event:
       value: "kaia-orderbook-api"
     - name: DD_ENV
       value: "qa"
-
 # ServiceAccount
 serviceAccount:
   create: true
   annotations:
     iam.gke.io/gcp-service-account: "kaia-dex-backend-sa@orderbook-dex-dev.iam.gserviceaccount.com"
   name: "kaia-dex-backend-qa"
-
 # Pod Disruption Budget
 podDisruptionBudget:
-  enabled: false  # Disable for QA environment
+  enabled: false # Disable for QA environment
   minAvailable: 1
-
 # Network Policy
 networkPolicy:
-  enabled: false  # Disable for QA environment
-
+  enabled: false # Disable for QA environment
 # Monitoring
 monitoring:
-  enabled: false  # Disable until monitoring stack is installed
+  enabled: false # Disable until monitoring stack is installed
   serviceMonitor:
     enabled: false
     namespace: "monitoring"
     interval: 30s
     scrapeTimeout: 10s
-
 environment:
   phase: "qa"
+contracts:
+  rollup: 0xFe046eA20991fB293d595F849088F209f299d4ea
+  sequencerInbox: 0x0D2E1e580c700a0de43FdB5dAbAe642B9c80BCD9
