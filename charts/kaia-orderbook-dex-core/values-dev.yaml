@@ -39,7 +39,7 @@ nitroNode:
   wasmModuleRoot: "0x184884e1eb9fefdc158f6c8ac912bb183bf3cf83f0090317e0bc4ac5860baa39"
   logLevel: 3
   # Additional configuration for full mode
-  dangerousDisableBlobReader: true  # Disable blob reader as in docker script
+  dangerousDisableBlobReader: true # Disable blob reader as in docker script
   # Enable health check for sequencer mode
   healthCheck:
     enabled: true
@@ -87,22 +87,22 @@ nitroNode:
         hosts:
           - l2-ws-dev.dexor.trade
   staker:
-    enabled: false  # Disable validator/staker (set to true for full mode)
+    enabled: false # Disable validator/staker (set to true for full mode)
     dangerous:
-      withoutBlockValidator: true  # Disable block validator (as in docker script)
+      withoutBlockValidator: true # Disable block validator (as in docker script)
     parentChainWallet:
       privateKey: "b00ed2290acbb3a03ce2e08ae15ffc32aa163789efdae5d1edd69ae05b14d12b"
-    disableChallenge: false  # Enable challenge capability
-    stakerInterval: "30s"  # Check for new assertions every 30s
-    makeAssertionInterval: "60s"  # Make assertions every 60s
-    strategy: "MakeNodes"  # Strategy for staking on latest assertions
+    disableChallenge: false # Enable challenge capability
+    stakerInterval: "30s" # Check for new assertions every 30s
+    makeAssertionInterval: "60s" # Make assertions every 60s
+    strategy: "MakeNodes" # Strategy for staking on latest assertions
     useSmartContractWallet: false
-    confirmationBlocks: 12  # Wait for 12 blocks before considering L1 tx finalized
+    confirmationBlocks: 12 # Wait for 12 blocks before considering L1 tx finalized
     bold:
-      rpcBlockNumber: "latest"  # Use latest block instead of finalized
+      rpcBlockNumber: "latest" # Use latest block instead of finalized
     parentChainReader:
-      useFinality: false  # Disable finality data (Kaia doesn't support eth_getBlockByNumber with finalized)
-    ensureRollupDeployment: false  # Skip rollup deployment check
+      useFinality: false # Disable finality data (Kaia doesn't support eth_getBlockByNumber with finalized)
+    ensureRollupDeployment: false # Skip rollup deployment check
 # Development environment configuration
 environment:
   phase: "dev"
@@ -115,17 +115,17 @@ environment:
     chainName: "Kaia Orderbook DEX"
   # Contract addresses from deployment (2025-06-19)
   contracts:
-    rollup: "0xe4D7992e5e0F994c82073b6D805bcbd13212639f"
-    sequencerInbox: "0x0e4029512C2a7893669632faE2e9973cD03975a1"
-    bridge: "0x1b584BCc5359c84D8A26d4fEAAE5996aAD0541e3"
-    inbox: "0x5660b1227683f589818c14959b2a88b864fB72a2"
+    rollup: "0x40635e03F3631d0AEaBc5F511832Acf2ccf0A87a"
+    sequencerInbox: "0xEC5497c4794fE29D7B25b0867f0ce6F03D332AcA"
+    bridge: "0x8408C2567126e23D975308d9fcbC7ec1D038B716"
+    inbox: "0x36d3EbB523e1D03047269F2740fae6B733eD41cb"
     outbox: "0x3acdc976607334d77cebc6b00112f797f6dba788" # From deployment output
     rollupEventInbox: "0x7FbCc8caCA161CD9541D7700f55D21D164E58548" # From deployment output
     challengeManager: "0x64430eD79366B010aA2D56559722095B677059FC" # From deployment output
     adminProxy: "0xbCE3833f82FbfAf93685Acb243e6ff61e5DF528D" # From deployment output
-    upgradeExecutor: "0x0E8536DE25f9277D30e0DB7af2b64534A0605C7e" # From l2_chain_info.json
-    validatorWalletCreator: "0xd54bEA42609092D3e7a41Cc51AE76E597Ca004e7" # From deployment output
-    stakeToken: "0xD06F45B188D9ccAf1E525B23E2a564c0fa034e5B" # From l2_chain_info.json (WETH)
+    upgradeExecutor: "0x94efD64ebcE00f6966C195D870e16f6204AE9241" # From l2_chain_info.json
+    validatorWalletCreator: "0x8149Bf4Ad08D587Dff4B96ef1EAbBf1Ac49B3d6c" # From deployment output
+    stakeToken: "0xE408C55b2fb7fC72C1269Fcc5854e5Dc6e7a4Dd7" # From l2_chain_info.json (WETH)
 # Enable monitoring in dev for debugging
 monitoring:
   enabled: true
@@ -228,30 +228,29 @@ config:
             }
           },
           "rollup": {
-            "bridge": "0x1b584BCc5359c84D8A26d4fEAAE5996aAD0541e3",
-            "inbox": "0x5660b1227683f589818c14959b2a88b864fB72a2",
-            "sequencer-inbox": "0x0e4029512C2a7893669632faE2e9973cD03975a1",
-            "deployed-at": 191743917,
-            "rollup": "0xe4D7992e5e0F994c82073b6D805bcbd13212639f",
+            "bridge": "0x8408C2567126e23D975308d9fcbC7ec1D038B716",
+            "inbox": "0x36d3EbB523e1D03047269F2740fae6B733eD41cb",
+            "sequencer-inbox": "0xEC5497c4794fE29D7B25b0867f0ce6F03D332AcA",
+            "deployed-at": 192809631,
+            "rollup": "0x40635e03F3631d0AEaBc5F511832Acf2ccf0A87a",
             "native-token": "0x0000000000000000000000000000000000000000",
-            "upgrade-executor": "0x0E8536DE25f9277D30e0DB7af2b64534A0605C7e",
-            "validator-wallet-creator": "0xd54bEA42609092D3e7a41Cc51AE76E597Ca004e7",
-            "stake-token": "0xD06F45B188D9ccAf1E525B23E2a564c0fa034e5B"
+            "upgrade-executor": "0x94efD64ebcE00f6966C195D870e16f6204AE9241",
+            "validator-wallet-creator": "0x8149Bf4Ad08D587Dff4B96ef1EAbBf1Ac49B3d6c",
+            "stake-token": "0xE408C55b2fb7fC72C1269Fcc5854e5Dc6e7a4Dd7"
           }
         }
       ]
     deployment.json: |
       {
-        "bridge": "0x1b584BCc5359c84D8A26d4fEAAE5996aAD0541e3",
-        "inbox": "0x5660b1227683f589818c14959b2a88b864fB72a2",
-        "sequencer-inbox": "0x0e4029512C2a7893669632faE2e9973cD03975a1",
-        "deployed-at": 191743917,
-        "rollup": "0xe4D7992e5e0F994c82073b6D805bcbd13212639f",
+        "bridge": "0x8408C2567126e23D975308d9fcbC7ec1D038B716",
+        "inbox": "0x36d3EbB523e1D03047269F2740fae6B733eD41cb",
+        "sequencer-inbox": "0xEC5497c4794fE29D7B25b0867f0ce6F03D332AcA",
+        "deployed-at": 192809631,
+        "rollup": "0x40635e03F3631d0AEaBc5F511832Acf2ccf0A87a",
         "native-token": "0x0000000000000000000000000000000000000000",
-        "upgrade-executor": "0x0E8536DE25f9277D30e0DB7af2b64534A0605C7e",
-        "validator-wallet-creator": "0xd54bEA42609092D3e7a41Cc51AE76E597Ca004e7",
-        "stake-token": "0xD06F45B188D9ccAf1E525B23E2a564c0fa034e5B"
+        "upgrade-executor": "0x94efD64ebcE00f6966C195D870e16f6204AE9241",
+        "validator-wallet-creator": "0x8149Bf4Ad08D587Dff4B96ef1EAbBf1Ac49B3d6c",
+        "stake-token": "0xE408C55b2fb7fC72C1269Fcc5854e5Dc6e7a4Dd7"
       }
-
 debugSidecar:
   enabled: true
