@@ -48,3 +48,12 @@ env:
     value: "kaia-orderbook-dex-admin"
   - name: DD_ENV
     value: "dev"
+
+# Override resources for dev environment
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 25m
+    memory: 64Mi

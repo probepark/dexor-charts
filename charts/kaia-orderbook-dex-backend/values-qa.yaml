@@ -42,11 +42,11 @@ api:
           - api-qa.dexor.trade
   resources:
     limits:
-      cpu: 1000m
-      memory: 1Gi
+      cpu: 300m
+      memory: 384Mi
     requests:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 150m
+      memory: 192Mi
   env:
     - name: KAIA_ORDERBOOK_PHASE
       value: "qa"
@@ -68,11 +68,11 @@ event:
     tag: "qa"
   resources:
     limits:
-      cpu: 1000m
-      memory: 1Gi
+      cpu: 300m
+      memory: 384Mi
     requests:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 150m
+      memory: 192Mi
   env:
     - name: KAIA_ORDERBOOK_PHASE
       value: "qa"
