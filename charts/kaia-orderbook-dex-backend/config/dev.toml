@@ -65,6 +65,8 @@ api_endpoint = "https://archive-en-kairos.node.kaia.io"
 ws_endpoint = "wss://responsive-green-emerald.kaia-kairos.quiknode.pro/"
 timeout = 600000
 sequencer_inbox_address = "0xEC5497c4794fE29D7B25b0867f0ce6F03D332AcA"
+batch_event_start_block = 186700000
+bridge_address = "0xED2465a921601DE67D0DEAde5A609795533ef061"
 
 [event]
 port = "8081"
