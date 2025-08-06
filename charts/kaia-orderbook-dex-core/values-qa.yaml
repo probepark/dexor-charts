@@ -127,7 +127,7 @@ sequencer:
     reorgResistanceMargin: "5m" # Reduced from default 10m for faster posting
     compressionLevel: 6 # 0-9, where 6 is a good balance
     parentChainWallet:
-      privateKey: "0x11d00470a9a385668a65abc1a31a4a349301e5cd8217fdc33fb0eb6c6f971a8e"
+      privateKey: "11d00470a9a385668a65abc1a31a4a349301e5cd8217fdc33fb0eb6c6f971a8e"
   dataAvailability:
     enabled: false # Onchain DA for QA
 # Nitro specific configuration
