@@ -14,7 +14,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: git@github.com:probepark/dexor-charts.git
+    repoURL: git@github.com:kaiachain/kaia-orderbook-dex-devops.git
     targetRevision: HEAD
     path: charts/kaia-orderbook-dex-core
     helm:
