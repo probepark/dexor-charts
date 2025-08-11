@@ -30,7 +30,7 @@ check_requirements() {
         echo "  curl -L https://foundry.paradigm.xyz | bash"
         exit 1
     fi
-    
+
     if ! command -v jq &> /dev/null; then
         print_color "$RED" "❌ 'jq' command not found."
         echo "Please install jq to proceed:"
@@ -99,7 +99,7 @@ KAIROS_RPC_URL="https://public-en-kairos.node.kaia.io"
 case $ENV in
     dev)
         DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0x49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1}"
-        DEFAULT_VALIDATOR="0x03C6FcED478cBbC9a4FAB34eF9f40767739D1Ff7"
+        DEFAULT_VALIDATOR="0xdCafF33D228d249ebe089e135D32f84Cb7CDb0c7"
         CONFIG_FILE="config/dev/deployed_chain_info.json"
         ;;
     qa)
@@ -158,7 +158,7 @@ check_validator() {
         "isValidator(address)(bool)" \
         "$address" \
         --rpc-url "$KAIROS_RPC_URL" 2>/dev/null || echo "error")
-    
+
     if [ "$status" = "true" ]; then
         print_color "$GREEN" "✅ $address is a validator"
         return 0
@@ -174,17 +174,17 @@ check_validator() {
 # Function to add validator
 add_validator() {
     local address=$1
-    
+
     print_color "$GREEN" "Adding validator: $address"
-    
+
     # Check deployer balance first
     DEPLOYER_ADDRESS=$(cast wallet address --private-key "$DEPLOYER_PRIVKEY" 2>/dev/null)
     BALANCE=$(cast balance "$DEPLOYER_ADDRESS" --rpc-url "$KAIROS_RPC_URL" 2>/dev/null || echo "0")
     BALANCE_ETH=$(cast to-unit "$BALANCE" ether 2>/dev/null || echo "0")
-    
+
     print_color "$YELLOW" "Deployer: $DEPLOYER_ADDRESS"
     print_color "$YELLOW" "Balance: $BALANCE_ETH KAIA"
-    
+
     # Check if balance is sufficient (need at least 0.1 KAIA for gas)
     MIN_BALANCE="100000000000000000" # 0.1 KAIA in wei
     if [ "$(echo "$BALANCE < $MIN_BALANCE" | bc)" = "1" ]; then
@@ -198,32 +198,32 @@ add_validator() {
         echo "  https://faucet.kaia.io/"
         exit 1
     fi
-    
+
     # Check if already validator
     if check_validator "$address"; then
         print_color "$YELLOW" "Already a validator, no action needed"
         return 0
     fi
-    
+
     # Encode the setValidator function call with function selector
     print_color "$YELLOW" "Encoding setValidator call..."
     CALLDATA=$(cast calldata "setValidator(address[],bool[])" \
         "[$address]" \
         "[true]")
-    
+
     # Debug: Print the calldata
     echo "Calldata: $CALLDATA"
-    
+
     # Create the execute call for UpgradeExecutor
     print_color "$YELLOW" "Preparing UpgradeExecutor transaction..."
-    
+
     # Send transaction through UpgradeExecutor
     print_color "$YELLOW" "Sending transaction..."
-    
+
     # Use proper execute function
     echo "Executing through UpgradeExecutor at $UPGRADE_EXECUTOR_ADDRESS"
     echo "Target contract: $ROLLUP_ADDRESS"
-    
+
     TX_OUTPUT=$(cast send "$UPGRADE_EXECUTOR_ADDRESS" \
         "executeCall(address,bytes)" \
         "$ROLLUP_ADDRESS" \
@@ -234,13 +234,13 @@ add_validator() {
         --gas-limit 500000 \
         --legacy \
         2>&1)
-    
+
     # Check for errors in output
     if echo "$TX_OUTPUT" | grep -q "Error\|error\|revert\|failed"; then
         print_color "$RED" "❌ Transaction failed"
         echo "Error details:"
         echo "$TX_OUTPUT"
-        
+
         # Try to extract specific error
         if echo "$TX_OUTPUT" | grep -q "insufficient funds"; then
             echo "Insufficient funds for transaction. Check account balance."
@@ -251,15 +251,15 @@ add_validator() {
         fi
         exit 1
     fi
-    
+
     # Extract transaction hash
     TX_HASH=$(echo "$TX_OUTPUT" | grep -o "0x[a-fA-F0-9]\{64\}" | head -1)
-    
+
     if [ -n "$TX_HASH" ]; then
         print_color "$GREEN" "Transaction sent: $TX_HASH"
         echo "Waiting for confirmation..."
         sleep 10
-        
+
         # Verify validator was added
         if check_validator "$address"; then
             print_color "$GREEN" "🎉 Successfully added validator!"
@@ -278,17 +278,17 @@ add_validator() {
 # Function to remove validator
 remove_validator() {
     local address=$1
-    
+
     print_color "$YELLOW" "Removing validator: $address"
-    
+
     # Check deployer balance first
     DEPLOYER_ADDRESS=$(cast wallet address --private-key "$DEPLOYER_PRIVKEY" 2>/dev/null)
     BALANCE=$(cast balance "$DEPLOYER_ADDRESS" --rpc-url "$KAIROS_RPC_URL" 2>/dev/null || echo "0")
     BALANCE_ETH=$(cast to-unit "$BALANCE" ether 2>/dev/null || echo "0")
-    
+
     print_color "$YELLOW" "Deployer: $DEPLOYER_ADDRESS"
     print_color "$YELLOW" "Balance: $BALANCE_ETH KAIA"
-    
+
     # Check if balance is sufficient (need at least 0.1 KAIA for gas)
     MIN_BALANCE="100000000000000000" # 0.1 KAIA in wei
     if [ "$(echo "$BALANCE < $MIN_BALANCE" | bc)" = "1" ]; then
@@ -302,29 +302,29 @@ remove_validator() {
         echo "  https://faucet.kaia.io/"
         exit 1
     fi
-    
+
     # Check if currently a validator
     if ! check_validator "$address"; then
         print_color "$YELLOW" "Not a validator, no action needed"
         return 0
     fi
-    
+
     # Encode the setValidator function call with function selector (with false to remove)
     print_color "$YELLOW" "Encoding setValidator call..."
     CALLDATA=$(cast calldata "setValidator(address[],bool[])" \
         "[$address]" \
         "[false]")
-    
+
     # Debug: Print the calldata
     echo "Calldata: $CALLDATA"
-    
+
     # Send transaction through UpgradeExecutor
     print_color "$YELLOW" "Sending transaction..."
-    
+
     # Use proper execute function
     echo "Executing through UpgradeExecutor at $UPGRADE_EXECUTOR_ADDRESS"
     echo "Target contract: $ROLLUP_ADDRESS"
-    
+
     TX_OUTPUT=$(cast send "$UPGRADE_EXECUTOR_ADDRESS" \
         "executeCall(address,bytes)" \
         "$ROLLUP_ADDRESS" \
@@ -335,15 +335,15 @@ remove_validator() {
         --gas-limit 500000 \
         --legacy \
         2>&1)
-    
+
     # Extract transaction hash
     TX_HASH=$(echo "$TX_OUTPUT" | grep -o "0x[a-fA-F0-9]\{64\}" | head -1)
-    
+
     if [ -n "$TX_HASH" ]; then
         print_color "$GREEN" "Transaction sent: $TX_HASH"
         echo "Waiting for confirmation..."
         sleep 10
-        
+
         # Verify validator was removed
         if ! check_validator "$address"; then
             print_color "$GREEN" "✅ Successfully removed validator!"
@@ -364,7 +364,7 @@ list_validators() {
     echo ""
     echo "Dev Environment:"
     echo "  Deployer: 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
-    echo "  Validator: 0x03C6FcED478cBbC9a4FAB34eF9f40767739D1Ff7"
+    echo "  Validator: 0xdCafF33D228d249ebe089e135D32f84Cb7CDb0c7"
     echo ""
     echo "QA Environment:"
     echo "  Deployer: 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f"
@@ -378,7 +378,7 @@ list_validators() {
     echo "  Deployer: 0xEe5FB80d84D389E35867092ed7A2d0aa5A7A207a"
     echo "  Validator: 0x1b4cc087207149A84A9B062D2EB90a1a5cc5B308"
     echo ""
-    
+
     # Check current environment validators
     if [ -n "$ROLLUP_ADDRESS" ] && [ "$ROLLUP_ADDRESS" != "null" ]; then
         echo "=== Current Status for $ENV Environment ==="

@@ -22,7 +22,7 @@
 
 ### Dev Environment
 - **Private Key**: `0xb8d4f7607e013d0132424a09645c31c1ac16857ecfce060f7d4d904979e421e0`
-- **Wallet Address**: `0x03C6FcED478cBbC9a4FAB34eF9f40767739D1Ff7`
+- **Wallet Address**: `0xdCafF33D228d249ebe089e135D32f84Cb7CDb0c7`
 
 ### QA Environment
 - **Private Key**: `0x0017d1bbc8c2fe03fadb8aabc0284705222e8da8363b98d3502329994f492ba1`
