@@ -170,8 +170,14 @@ monitoring:
 sequencer:
   enabled: true
   coordinatorUrl: "http://0.0.0.0:8547"
-  queueSize: 4096
-  maxBlockSpeed: "250ms"
+  queueSize: 4096 # Queue size for full mode
+  maxBlockSpeed: "250ms" # Block speed for full mode
+  maxRevertGasReject: 0
+  gasCap: "150000000"
+  txFeeCap: 10
+  delayedSequencer:
+    enabled: true
+  dangerousNoSequencerCoordinator: true # Required for full mode without redis
   redis:
     enabled: false # Single sequencer in dev
   batchPoster:
