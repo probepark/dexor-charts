@@ -26,7 +26,7 @@
 
 ### QA Environment
 - **Private Key**: `0x0017d1bbc8c2fe03fadb8aabc0284705222e8da8363b98d3502329994f492ba1`
-- **Wallet Address**: `0xfDA64D91f24107Ba1747510D062cBf0fB87238C3`
+- **Wallet Address**: `0xe37aFA285a45574569d474D71F2E97ad0BF6f6AF`
 
 ### Perf Environment
 - **Private Key**: `0xee9a0c80d3c32d6dc9cadc62c9565630da16877e69295c4c99b50d0c890e9904`

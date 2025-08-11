@@ -104,7 +104,7 @@ case $ENV in
         ;;
     qa)
         DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0x11d00470a9a385668a65abc1a31a4a349301e5cd8217fdc33fb0eb6c6f971a8e}"
-        DEFAULT_VALIDATOR="0xfDA64D91f24107Ba1747510D062cBf0fB87238C3"
+        DEFAULT_VALIDATOR="0xe37aFA285a45574569d474D71F2E97ad0BF6f6AF"
         CONFIG_FILE="config/qa/deployed_chain_info.json"
         ;;
     perf)
@@ -368,7 +368,7 @@ list_validators() {
     echo ""
     echo "QA Environment:"
     echo "  Deployer: 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f"
-    echo "  Validator: 0xfDA64D91f24107Ba1747510D062cBf0fB87238C3"
+    echo "  Validator: 0xe37aFA285a45574569d474D71F2E97ad0BF6f6AF"
     echo ""
     echo "Perf Environment:"
     echo "  Deployer: 0x34844E6c6C60b590eE54AC5A9183526Eaf376fa6"

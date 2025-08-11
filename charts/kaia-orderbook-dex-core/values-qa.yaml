@@ -1,10 +1,8 @@
-# QA environment values for kaia-orderbook-dex-core
-# Based on dev configuration with QA-specific overrides
-
 global:
   imageRegistry: "asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry"
 nameOverride: qa-kaia-orderbook-dex-core
 fullnameOverride: qa-kaia-orderbook-dex-core
+nodeMode: "full"
 nitroNode:
   enabled: true
   image:
@@ -29,20 +27,75 @@ nitroNode:
       operator: "Equal"
       value: "sequencer"
       effect: "NoSchedule"
-  # Full mode - args will be generated from template
   args: []
-  # Config file disabled - using args for all settings
-  configFile: ""
+  configFile: "/config/sequencer_config.json"
   # Persistent chain path
   persistentChain: "/data"
   # WASM module root from deployment
   wasmModuleRoot: "0x184884e1eb9fefdc158f6c8ac912bb183bf3cf83f0090317e0bc4ac5860baa39"
   logLevel: 3
-  # Additional configuration for full mode
-  dangerousDisableBlobReader: true # Disable blob reader as in docker script
   # Enable health check for sequencer mode
   healthCheck:
     enabled: true
+  # Staker configuration for full mode
+  staker:
+    enabled: true
+    parentChainWallet:
+      privateKey: "0017d1bbc8c2fe03fadb8aabc0284705222e8da8363b98d3502329994f492ba1"
+    strategy: "MakeNodes"
+    stakerInterval: "30s"
+    makeAssertionInterval: "60s"
+    confirmationBlocks: 12
+    enableFastConfirmation: false
+    disableChallenge: false
+    dangerous:
+      withoutBlockValidator: true
+    dataPoster:
+      maxMempoolTransactions: 30
+    bold:
+      enabled: true
+      strategy: "MakeNodes"
+      rpcBlockNumber: "latest"
+      stateProvider:
+        checkBatchFinality: false
+      parentChainBlockTime: "1s"
+      maxGetLogBlocks: 100
+      assertionScanningInterval: "60s"
+      assertionPostingInterval: "2m"
+    parentChainReader:
+      useFinality: false
+    ensureRollupDeployment: false
+  # Inbox reader configuration
+  inboxReader:
+    readMode: "latest"
+  # Ensure rollup deployment is disabled
+  ensureRollupDeployment: false
+  # Enable dangerous flags for full mode
+  dangerousDisableBlobReader: true
+  # Validation configuration
+  validation:
+    blockValidator:
+      enable: false
+    wasm:
+      rootPath: "/data/wasm"
+  # Execution configuration
+  execution:
+    stylusTarget:
+      amd64: "x86_64-linux-unknown"
+  # Service configuration
+  service:
+    httpPort: 8547
+    wsPort: 8548
+  # HTTP API configuration for full mode
+  httpApi: "net,web3,eth,debug,arb,arbinternal"
+  # Enable GraphQL
+  graphql:
+    enabled: true
+  # Enable pprof for performance profiling
+  pprof:
+    enabled: true
+  # Set replica count
+  replicaCount: 1
   env:
     - name: DD_AGENT_HOST
       valueFrom:
@@ -117,19 +170,26 @@ monitoring:
 sequencer:
   enabled: true
   coordinatorUrl: "http://0.0.0.0:8547"
-  queueSize: 4096
-  maxBlockSpeed: "250ms"
+  queueSize: 4096 # Queue size for full mode
+  maxBlockSpeed: "250ms" # Block speed for full mode
+  maxRevertGasReject: 0
+  gasCap: "150000000"
+  txFeeCap: 10
+  delayedSequencer:
+    enabled: true
+  dangerousNoSequencerCoordinator: true # Required for full mode without redis
   redis:
     enabled: false # Single sequencer in QA
   batchPoster:
     enabled: true # Enable batch posting with private key
-    maxDelay: "2h" # Increased from 30s to avoid conflicts with reorg-resistance-margin
-    reorgResistanceMargin: "5m" # Reduced from default 10m for faster posting
+    maxDelay: "10s" # Increased from 30s to avoid conflicts with reorg-resistance-margin
     compressionLevel: 6 # 0-9, where 6 is a good balance
     parentChainWallet:
       privateKey: "11d00470a9a385668a65abc1a31a4a349301e5cd8217fdc33fb0eb6c6f971a8e"
-  dataAvailability:
-    enabled: false # Onchain DA for QA
+    dataPoster:
+      maxMempoolTransactions: 20
+    dataAvailability:
+      enabled: false # Onchain DA for QA
 # Nitro specific configuration
 nitroConfig:
   feed:
