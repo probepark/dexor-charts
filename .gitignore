@@ -47,3 +47,6 @@ argocd-applications/dev/deploy_key.pub
 repository-secret.yaml
 
 keys
+
+# Arbitrum data directory
+arbitrum-data/

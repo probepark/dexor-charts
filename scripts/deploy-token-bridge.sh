@@ -64,7 +64,7 @@ case $ENV in
     perf)
         L1_RPC_URL="https://public-en-kairos.node.kaia.io"
         L2_RPC_URL="https://l2-rpc-perf.dexor.trade"
-        DEPLOYER_KEY="${TOKEN_BRIDGE_DEPLOYER_KEY:-0x49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1}"
+        DEPLOYER_KEY="${TOKEN_BRIDGE_DEPLOYER_KEY:-0x25c4b8e9afe2ff43f27e370087ad842443259734d758b9021ae368415b92a723}"
         ;;
     local)
         # Local environment with same key as deploy-to-kairos.sh local

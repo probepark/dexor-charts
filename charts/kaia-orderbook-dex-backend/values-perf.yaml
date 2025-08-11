@@ -137,12 +137,11 @@ performance:
       whenUnsatisfiable: DoNotSchedule
 environment:
   phase: "perf"
-
 # Configuration files
 configFiles:
   - perf.toml
-
 # Contract addresses (will be updated by deploy scripts)
 contracts:
-  rollup: "0xE7c1A5385EdAf0F31d24F1EaD04bd58A178A065a"
-  sequencerInbox: "0x9c8A370F2f36134BB30a35A6AaB3F3899310e533"
+  rollup: "0xcD772f2B5319c15fCB133209C902E8617AFd48ae"
+  sequencerInbox: "0xF0111213E64F05CAe88086ddFCD5cb5d5A824dD5"
+  bridge: 0xa328448A86402B26289CB6269788138f54AA412a

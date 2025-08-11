@@ -1,10 +1,8 @@
-# Development environment values for kaia-orderbook-dex-core
-# Auto-updated by update-values-from-deployment.sh on #오후
-
 global:
   imageRegistry: "asia-northeast3-docker.pkg.dev/orderbook-dex-dev/dev-docker-registry"
 nameOverride: dev-kaia-orderbook-dex-core
 fullnameOverride: dev-kaia-orderbook-dex-core
+nodeMode: "full"
 nitroNode:
   enabled: true
   image:
@@ -29,20 +27,75 @@ nitroNode:
       operator: "Equal"
       value: "sequencer"
       effect: "NoSchedule"
-  # Full mode - args will be generated from template
   args: []
-  # Config file disabled - using args for all settings
-  configFile: ""
+  configFile: "/config/sequencer_config.json"
   # Persistent chain path
   persistentChain: "/data"
   # WASM module root from deployment
   wasmModuleRoot: "0x184884e1eb9fefdc158f6c8ac912bb183bf3cf83f0090317e0bc4ac5860baa39"
   logLevel: 3
-  # Additional configuration for full mode
-  dangerousDisableBlobReader: true # Disable blob reader as in docker script
   # Enable health check for sequencer mode
   healthCheck:
     enabled: true
+  # Staker configuration for full mode
+  staker:
+    enabled: true
+    parentChainWallet:
+      privateKey: "ee9a0c80d3c32d6dc9cadc62c9565630da16877e69295c4c99b50d0c890e9904"
+    strategy: "MakeNodes"
+    stakerInterval: "30s"
+    makeAssertionInterval: "60s"
+    confirmationBlocks: 12
+    enableFastConfirmation: false
+    disableChallenge: false
+    dangerous:
+      withoutBlockValidator: true
+    dataPoster:
+      maxMempoolTransactions: 30
+    bold:
+      enabled: true
+      strategy: "MakeNodes"
+      rpcBlockNumber: "latest"
+      stateProvider:
+        checkBatchFinality: false
+      parentChainBlockTime: "1s"
+      maxGetLogBlocks: 100
+      assertionScanningInterval: "60s"
+      assertionPostingInterval: "2m"
+    parentChainReader:
+      useFinality: false
+    ensureRollupDeployment: false
+  # Inbox reader configuration
+  inboxReader:
+    readMode: "latest"
+  # Ensure rollup deployment is disabled
+  ensureRollupDeployment: false
+  # Enable dangerous flags for full mode
+  dangerousDisableBlobReader: true
+  # Validation configuration
+  validation:
+    blockValidator:
+      enable: false
+    wasm:
+      rootPath: "/data/wasm"
+  # Execution configuration
+  execution:
+    stylusTarget:
+      amd64: "x86_64-linux-unknown"
+  # Service configuration
+  service:
+    httpPort: 8547
+    wsPort: 8548
+  # HTTP API configuration for full mode
+  httpApi: "net,web3,eth,debug,arb,arbinternal"
+  # Enable GraphQL
+  graphql:
+    enabled: true
+  # Enable pprof for performance profiling
+  pprof:
+    enabled: true
+  # Set replica count
+  replicaCount: 1
   env:
     - name: DD_AGENT_HOST
       valueFrom:
@@ -86,23 +139,6 @@ nitroNode:
       - secretName: l2-ws-dev-tls
         hosts:
           - l2-ws-dev.dexor.trade
-  staker:
-    enabled: false # Disable validator/staker (set to true for full mode)
-    dangerous:
-      withoutBlockValidator: true # Disable block validator (as in docker script)
-    parentChainWallet:
-      privateKey: "b00ed2290acbb3a03ce2e08ae15ffc32aa163789efdae5d1edd69ae05b14d12b"
-    disableChallenge: false # Enable challenge capability
-    stakerInterval: "30s" # Check for new assertions every 30s
-    makeAssertionInterval: "60s" # Make assertions every 60s
-    strategy: "MakeNodes" # Strategy for staking on latest assertions
-    useSmartContractWallet: false
-    confirmationBlocks: 12 # Wait for 12 blocks before considering L1 tx finalized
-    bold:
-      rpcBlockNumber: "latest" # Use latest block instead of finalized
-    parentChainReader:
-      useFinality: false # Disable finality data (Kaia doesn't support eth_getBlockByNumber with finalized)
-    ensureRollupDeployment: false # Skip rollup deployment check
 # Development environment configuration
 environment:
   phase: "dev"
@@ -140,11 +176,12 @@ sequencer:
     enabled: false # Single sequencer in dev
   batchPoster:
     enabled: true # Enable batch posting with private key
-    maxDelay: "2h" # Increased from 30s to avoid conflicts with reorg-resistance-margin
-    reorgResistanceMargin: "5m" # Reduced from default 10m for faster posting
+    maxDelay: "10s" # Increased from 30s to avoid conflicts with reorg-resistance-margin
     compressionLevel: 6 # 0-9, where 6 is a good balance
     parentChainWallet:
       privateKey: "49552d0ea850ae92d477b2479315ddce17692bb05ce3f8fd4ca9109cca134cb1"
+    dataPoster:
+      maxMempoolTransactions: 20
     dataAvailability:
       enable: false # Use onchain data availability for dev
 # Nitro specific configuration

@@ -48,15 +48,31 @@ case $ENV in
         ;;
     perf)
         # Performance environment with different deployer key
-        DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a}"
-        OWNER_ADDRESS="${OWNER_ADDRESS:-0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC}"
-        SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC}"
+        DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0x25c4b8e9afe2ff43f27e370087ad842443259734d758b9021ae368415b92a723}"
+        OWNER_ADDRESS="${OWNER_ADDRESS:-0x34844E6c6C60b590eE54AC5A9183526Eaf376fa6}"
+        SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0x34844E6c6C60b590eE54AC5A9183526Eaf376fa6}"
         ;;
     local)
         # Local environment with unique deployer key
         DEPLOYER_PRIVKEY="${DEPLOYER_PRIVKEY:-0xcc56168a0e292aad91d2f03a976da05910215a6d3cafff8bdad463736ac8f548}"
         OWNER_ADDRESS="${OWNER_ADDRESS:-0x54C4C432da17B33401e1E85E17Df041BBb0A373c}"
         SEQUENCER_ADDRESS="${SEQUENCER_ADDRESS:-0x54C4C432da17B33401e1E85E17Df041BBb0A373c}"
+        ;;
+esac
+
+# Set validator addresses based on environment
+case $ENV in
+    dev)
+        VALIDATOR_ADDRESS="0x03C6FcED478cBbC9a4FAB34eF9f40767739D1Ff7"
+        ;;
+    qa)
+        VALIDATOR_ADDRESS="0xfDA64D91f24107Ba1747510D062cBf0fB87238C3"
+        ;;
+    perf)
+        VALIDATOR_ADDRESS="0x1EeFeB1fE3050E0555C1a73aF913AAA7A5E65187"
+        ;;
+    local)
+        VALIDATOR_ADDRESS="0x1b4cc087207149A84A9B062D2EB90a1a5cc5B308"
         ;;
 esac
 
@@ -320,6 +336,77 @@ if [ -f "$DEPLOYMENT_INFO_FILE" ]; then
         echo "1. Commit the updated values-$ENV.yaml files and config/$ENV.toml to your Git repository."
         echo "2. ArgoCD will automatically sync the changes to the '$ENV' environment."
     fi  # End of Helm values update section
+
+    # Step 9: Add validator through UpgradeExecutor
+    echo ""
+    echo "Step 9: Adding validator to rollup..."
+    echo "Validator address: $VALIDATOR_ADDRESS"
+
+    # Check if cast is installed
+    if ! command -v cast &> /dev/null; then
+        echo "⚠️  Warning: 'cast' command not found. Skipping validator addition."
+        echo "Install Foundry to enable validator management: curl -L https://foundry.paradigm.xyz | bash"
+    else
+        # Check current validator status
+        echo "Checking current validator status..."
+        IS_VALIDATOR=$(cast call "$ROLLUP_ADDRESS" \
+            "isValidator(address)(bool)" \
+            "$VALIDATOR_ADDRESS" \
+            --rpc-url "$KAIROS_RPC_URL" 2>/dev/null || echo "false")
+
+        if [ "$IS_VALIDATOR" = "true" ]; then
+            echo "✅ Address $VALIDATOR_ADDRESS is already a validator"
+        else
+            echo "Adding $VALIDATOR_ADDRESS as validator..."
+
+            # Encode the setValidator function call
+            CALLDATA=$(cast abi-encode "setValidator(address[],bool[])" \
+                "[$VALIDATOR_ADDRESS]" \
+                "[true]")
+
+            # Execute through UpgradeExecutor
+            echo "Executing through UpgradeExecutor at $UPGRADE_EXECUTOR_ADDRESS..."
+
+            # Create the execute call data for UpgradeExecutor
+            EXEC_CALLDATA=$(cast abi-encode "execute(address,bytes)" \
+                "$ROLLUP_ADDRESS" \
+                "$CALLDATA")
+
+            # Send transaction through UpgradeExecutor
+            TX_HASH=$(cast send "$UPGRADE_EXECUTOR_ADDRESS" \
+                --private-key "$DEPLOYER_PRIVKEY" \
+                --rpc-url "$KAIROS_RPC_URL" \
+                --gas-price 250000000000 \
+                --gas-limit 300000 \
+                --legacy \
+                "$EXEC_CALLDATA" 2>&1 | grep "transactionHash" | awk '{print $2}' || true)
+
+            if [ -n "$TX_HASH" ]; then
+                echo "Transaction sent: $TX_HASH"
+                echo "Waiting for confirmation..."
+                sleep 5
+
+                # Verify validator was added
+                IS_VALIDATOR_AFTER=$(cast call "$ROLLUP_ADDRESS" \
+                    "isValidator(address)(bool)" \
+                    "$VALIDATOR_ADDRESS" \
+                    --rpc-url "$KAIROS_RPC_URL" 2>/dev/null || echo "false")
+
+                if [ "$IS_VALIDATOR_AFTER" = "true" ]; then
+                    echo "✅ Successfully added $VALIDATOR_ADDRESS as validator!"
+                else
+                    echo "⚠️  Warning: Validator addition may have failed. Please check manually."
+                fi
+            else
+                echo "⚠️  Warning: Failed to add validator. This may require manual intervention."
+                echo "You can add the validator manually using the add-validator.sh script."
+            fi
+        fi
+    fi
+
+    echo ""
+    echo "=== Deployment and Validator Setup Complete! ==="
+    echo ""
 
 else
     echo "❌ ERROR: Deployment failed - $DEPLOYMENT_INFO_FILE not found"

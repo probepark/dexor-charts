@@ -47,15 +47,27 @@ spec:
             - "--http.port={{ .Values.nitroNode.service.httpPort }}"
             - "--http.vhosts=*"
             - "--http.corsdomain=*"
+            - "--http.api={{ .Values.nitroNode.httpApi }}"
             - "--ws.addr=0.0.0.0"
             - "--ws.port={{ .Values.nitroNode.service.wsPort }}"
             - "--ws.origins=*"
             # Finality configuration for Kaia
             - "--execution.parent-chain-reader.use-finality-data=false"
-            - "--node.parent-chain-reader.use-finality-data=false"
-            {{- if not .Values.nitroNode.staker.enabled }}
-            # Disable staker when not in full mode
+            {{- if or (eq .Values.nodeMode "archive") (eq .Values.nodeMode "sequencer") }}
+            # Disable staker for archive and sequencer modes
             - "--node.staker.enable=false"
+            {{- end }}
+            # Validation configuration
+            {{- if .Values.nitroNode.validation.blockValidator.enable }}
+            - "--node.block-validator.enable=true"
+            {{- else }}
+            - "--node.block-validator.enable=false"
+            {{- end }}
+            {{- if .Values.nitroNode.validation.wasm.rootPath }}
+            - "--validation.wasm.root-path={{ .Values.nitroNode.validation.wasm.rootPath }}"
+            {{- end }}
+            {{- if .Values.nitroNode.execution.stylusTarget.amd64 }}
+            - "--execution.stylus-target.amd64={{ .Values.nitroNode.execution.stylusTarget.amd64 }}"
             {{- end }}
             {{- if .Values.nitroNode.args }}
             {{- toYaml .Values.nitroNode.args | nindent 12 }}
@@ -63,18 +75,24 @@ spec:
             {{- if .Values.nitroConfig.archiveMode }}
             - "--node.archive"
             {{- end }}
-            {{- if .Values.sequencer.enabled }}
+            {{- if or (eq .Values.nodeMode "sequencer") (eq .Values.nodeMode "full") }}
+            # Sequencer configuration
             - "--node.sequencer"
             - "--execution.sequencer.enable"
+            {{- if .Values.sequencer.delayedSequencer.enabled }}
             - "--node.delayed-sequencer.enable"
-            - "--node.delayed-sequencer.use-merge-finality=false"
+            {{- end }}
+            {{- if .Values.sequencer.gasCap }}
             - "--execution.rpc.gas-cap={{ .Values.sequencer.gasCap }}"
+            {{- end }}
+            {{- if .Values.sequencer.txFeeCap }}
             - "--execution.rpc.tx-fee-cap={{ .Values.sequencer.txFeeCap }}"
+            {{- end }}
             {{- if .Values.sequencer.redis.enabled }}
             - "--node.seq-coordinator.enable"
             - "--node.seq-coordinator.redis-url={{ .Values.sequencer.redis.url }}"
             - "--node.seq-coordinator.my-url={{ .Values.sequencer.coordinatorUrl }}"
-            {{- else }}
+            {{- else if .Values.sequencer.dangerousNoSequencerCoordinator }}
             - "--node.dangerous.no-sequencer-coordinator"
             {{- end }}
             {{- end }}
@@ -101,16 +119,31 @@ spec:
             {{- if .Values.nitroNode.wasmModuleRoot }}
             - "--validation.wasm.allowed-wasm-module-roots={{ .Values.nitroNode.wasmModuleRoot }}"
             {{- end }}
-            {{- if .Values.sequencer.enabled }}
+            {{- if or (eq .Values.nodeMode "sequencer") (eq .Values.nodeMode "full") }}
+            # Sequencer additional settings
             - "--execution.sequencer.queue-size={{ .Values.sequencer.queueSize }}"
             - "--execution.sequencer.max-block-speed={{ .Values.sequencer.maxBlockSpeed }}"
+            {{- if .Values.sequencer.maxRevertGasReject }}
+            - "--execution.sequencer.max-revert-gas-reject={{ .Values.sequencer.maxRevertGasReject }}"
+            {{- else }}
             - "--execution.sequencer.max-revert-gas-reject=0"
             {{- end }}
-            {{- if .Values.sequencer.batchPoster.enabled }}
+            {{- end }}
+            {{- if and (or (eq .Values.nodeMode "sequencer") (eq .Values.nodeMode "full")) .Values.sequencer.batchPoster.enabled }}
+            # Batch poster configuration
             - "--node.batch-poster.enable=true"
             - "--node.batch-poster.max-delay={{ .Values.sequencer.batchPoster.maxDelay }}"
-            - "--node.batch-poster.compression-level={{ .Values.sequencer.batchPoster.compressionLevel | default 6 }}"
+            {{- if .Values.sequencer.batchPoster.compressionLevel }}
+            - "--node.batch-poster.compression-level={{ .Values.sequencer.batchPoster.compressionLevel }}"
+            {{- end }}
+            {{- if .Values.sequencer.batchPoster.reorgResistanceMargin }}
             - "--node.batch-poster.l1-block-bound=latest"
+            {{- end }}
+            {{- if eq .Values.nodeMode "full" }}
+            - "--node.batch-poster.data-poster.max-mempool-transactions={{ .Values.sequencer.batchPoster.dataPoster.maxMempoolTransactions | default 20 }}"
+            {{- else if .Values.sequencer.batchPoster.dataPoster.maxMempoolTransactions }}
+            - "--node.batch-poster.data-poster.max-mempool-transactions={{ .Values.sequencer.batchPoster.dataPoster.maxMempoolTransactions }}"
+            {{- end }}
             {{- if .Values.sequencer.batchPoster.dataAvailability }}
             {{- if .Values.sequencer.batchPoster.dataAvailability.enable }}
             - "--node.data-availability.enable={{ .Values.sequencer.batchPoster.dataAvailability.enable }}"
@@ -124,7 +157,8 @@ spec:
             - "--node.batch-poster.parent-chain-wallet.private-key={{ .Values.sequencer.batchPoster.parentChainWallet.privateKey }}"
             {{- end }}
             {{- end }}
-            {{- if .Values.nitroNode.staker.enabled }}
+            {{- if or (eq .Values.nodeMode "validator") (eq .Values.nodeMode "full") }}
+            # Staker/Validator configuration
             - "--node.staker.enable=true"
             {{- if .Values.nitroNode.staker.parentChainWallet.privateKey }}
             - "--node.staker.parent-chain-wallet.private-key={{ .Values.nitroNode.staker.parentChainWallet.privateKey }}"
@@ -132,16 +166,69 @@ spec:
             {{- if .Values.nitroNode.staker.strategy }}
             - "--node.staker.strategy={{ .Values.nitroNode.staker.strategy }}"
             {{- end }}
+            {{- if .Values.nitroNode.staker.bold.enabled }}
+            {{- if .Values.nitroNode.staker.bold.strategy }}
+            - "--node.bold.strategy={{ .Values.nitroNode.staker.bold.strategy }}"
+            {{- else }}
+            - "--node.bold.strategy={{ .Values.nitroNode.staker.strategy }}"
+            {{- end }}
+            {{- end }}
+            {{- if eq .Values.nodeMode "validator" }}
+            # Validator-specific settings
+            {{- if .Values.nitroNode.staker.useSmartContractWallet }}
+            - "--node.staker.use-smart-contract-wallet"
+            {{- end }}
+            {{- if .Values.nitroNode.staker.disableChallenge }}
+            - "--node.staker.disable-challenge={{ .Values.nitroNode.staker.disableChallenge }}"
+            {{- end }}
+            - "--node.staker.confirmation-blocks={{ .Values.nitroNode.staker.confirmationBlocks | default 10 }}"
+            - "--node.staker.make-assertion-interval={{ .Values.nitroNode.staker.makeAssertionInterval | default "30s" }}"
+            {{- if .Values.nitroNode.staker.enableFastConfirmation }}
+            - "--node.staker.enable-fast-confirmation={{ .Values.nitroNode.staker.enableFastConfirmation }}"
+            {{- end }}
+            {{- end }}
             {{- if .Values.nitroNode.staker.dangerous.withoutBlockValidator }}
             - "--node.staker.dangerous.without-block-validator"
             {{- end }}
-            {{- if .Values.nitroNode.staker.bold.rpcBlockNumber }}
+            {{- if .Values.nitroNode.staker.dataPoster.maxMempoolTransactions }}
+            - "--node.staker.data-poster.max-mempool-transactions={{ .Values.nitroNode.staker.dataPoster.maxMempoolTransactions }}"
+            {{- end }}
+            {{- if .Values.nitroNode.staker.bold.enabled }}
+            # BoLD configuration
             - "--node.bold.rpc-block-number={{ .Values.nitroNode.staker.bold.rpcBlockNumber }}"
-            - "--node.bold.strategy=MakeNodes"
+            {{- if not .Values.nitroNode.staker.bold.stateProvider.checkBatchFinality }}
+            - "--node.bold.state-provider-config.check-batch-finality=false"
+            {{- end }}
+            {{- if .Values.nitroNode.staker.bold.gasPrice }}
+            - "--node.bold.gas-price={{ .Values.nitroNode.staker.bold.gasPrice }}"
+            {{- end }}
+            {{- if .Values.nitroNode.staker.bold.gasLimit }}
+            - "--node.bold.gas-limit={{ .Values.nitroNode.staker.bold.gasLimit }}"
+            {{- end }}
+            {{- if .Values.nitroNode.staker.bold.parentChainBlockTime }}
+            - "--node.bold.parent-chain-block-time={{ .Values.nitroNode.staker.bold.parentChainBlockTime }}"
+            {{- end }}
+            {{- if .Values.nitroNode.staker.bold.maxGetLogBlocks }}
+            - "--node.bold.max-get-log-blocks={{ .Values.nitroNode.staker.bold.maxGetLogBlocks }}"
+            {{- end }}
+            {{- if .Values.nitroNode.staker.bold.assertionScanningInterval }}
+            - "--node.bold.assertion-scanning-interval={{ .Values.nitroNode.staker.bold.assertionScanningInterval }}"
+            {{- end }}
+            {{- if eq .Values.nodeMode "full" }}
+            - "--node.bold.assertion-posting-interval={{ .Values.nitroNode.staker.bold.assertionPostingInterval | default "2m" }}"
+            {{- end }}
+            {{- end }}
+            {{- if .Values.nitroNode.inboxReader.readMode }}
+            - "--node.inbox-reader.read-mode={{ .Values.nitroNode.inboxReader.readMode }}"
+            {{- end }}
+            {{- if .Values.nitroNode.staker.parentChainReader.useFinality }}
+            - "--node.parent-chain-reader.use-finality-data={{ .Values.nitroNode.staker.parentChainReader.useFinality }}"
             {{- end }}
             {{- if eq .Values.nitroNode.staker.ensureRollupDeployment false }}
             - "--ensure-rollup-deployment=false"
             {{- end }}
+            {{- else if eq .Values.nitroNode.ensureRollupDeployment false }}
+            - "--ensure-rollup-deployment=false"
             {{- end }}
             {{- if .Values.monitoring.enabled }}
             - "--metrics"
@@ -160,8 +247,6 @@ spec:
             - "--graphql.vhosts=*"
             - "--graphql.corsdomain=*"
             {{- end }}
-            # Additional HTTP API configuration
-            - "--http.api={{ .Values.nitroNode.httpApi }}"
           env:
             - name: NITRO_PHASE
               value: {{ .Values.environment.phase | quote }}

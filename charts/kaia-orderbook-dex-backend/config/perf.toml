@@ -72,7 +72,7 @@ batch_size = 1000     # Larger batch size for performance
 api_endpoint = "https://archive-en-kairos.node.kaia.io"
 ws_endpoint = "wss://responsive-green-emerald.kaia-kairos.quiknode.pro/"
 timeout = 300000      # 5 minute timeout for performance testing
-sequencer_inbox_address = "0x9c8A370F2f36134BB30a35A6AaB3F3899310e533"
+sequencer_inbox_address = "0xF0111213E64F05CAe88086ddFCD5cb5d5A824dD5"
 max_connections = 50  # Higher connection limit for performance testing
 retry_attempts = 3    # Retry attempts for resilience
 
