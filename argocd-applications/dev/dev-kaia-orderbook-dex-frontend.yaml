@@ -12,7 +12,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: git@github.com:kaiachain/kaia-orderbook-dex-devops.git
+    repoURL: https://github.com/kaiachain/kaia-orderbook-dex-devops
     targetRevision: HEAD
     path: charts/kaia-orderbook-dex-frontend
     helm:

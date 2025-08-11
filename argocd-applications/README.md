@@ -93,7 +93,7 @@ argocd app get dev-kaia-orderbook-dex-backend
 Each application:
 - Uses `dev-` prefix for the name
 - Deploys to `kaia-dex` namespace
-- Sources from `git@github.com:kaiachain/kaia-orderbook-dex-devops.git`
+- Sources from `https://github.com/kaiachain/kaia-orderbook-dex-devops`
 - Uses respective `values-dev.yaml` file
 - Has automated sync with prune and self-heal enabled
 

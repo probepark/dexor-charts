@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 # Default values
 NAMESPACE="argocd"
 SECRET_NAME="dexor-charts-repo"
-REPO_URL="git@github.com:kaiachain/kaia-orderbook-dex-devops.git"
+REPO_URL="https://github.com/kaiachain/kaia-orderbook-dex-devops"
 
 # Function to display usage
 usage() {
@@ -23,7 +23,7 @@ usage() {
     echo "Options:"
     echo "  -n, --namespace <namespace>    Kubernetes namespace (default: argocd)"
     echo "  -s, --secret-name <name>       Secret name (default: dexor-charts-repo)"
-    echo "  -r, --repo-url <url>          Repository URL (default: git@github.com:kaiachain/kaia-orderbook-dex-devops.git)"
+    echo "  -r, --repo-url <url>          Repository URL (default: https://github.com/kaiachain/kaia-orderbook-dex-devops)"
     echo "  -k, --ssh-key <path>          Path to SSH private key file (required)"
     echo "  -h, --help                    Display this help message"
     echo ""
