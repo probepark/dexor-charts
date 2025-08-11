@@ -41,7 +41,7 @@ nitroNode:
   staker:
     enabled: true
     parentChainWallet:
-      privateKey: "ee9a0c80d3c32d6dc9cadc62c9565630da16877e69295c4c99b50d0c890e9904"
+      privateKey: "b8d4f7607e013d0132424a09645c31c1ac16857ecfce060f7d4d904979e421e0"
     strategy: "MakeNodes"
     stakerInterval: "30s"
     makeAssertionInterval: "60s"
