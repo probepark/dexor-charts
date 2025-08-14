@@ -1,11 +1,11 @@
 {
-  "bridge": "0x8408C2567126e23D975308d9fcbC7ec1D038B716",
-  "inbox": "0x36d3EbB523e1D03047269F2740fae6B733eD41cb",
-  "sequencer-inbox": "0xEC5497c4794fE29D7B25b0867f0ce6F03D332AcA",
-  "deployed-at": 192809631,
-  "rollup": "0x40635e03F3631d0AEaBc5F511832Acf2ccf0A87a",
+  "bridge": "0x3bd33c6ef33DFE1c388A830c95a1a36B0172aA48",
+  "inbox": "0xEd314848B0E7fa60b5F4ba4Ba281C6a335BDFFD6",
+  "sequencer-inbox": "0xaAc4542baA04633b822C27215Dd81446C1bbb2E7",
+  "deployed-at": 193510055,
+  "rollup": "0x32B1cCbAa1f5455747e9baf2b4Ed1c78a1fd13F5",
   "native-token": "0x0000000000000000000000000000000000000000",
-  "upgrade-executor": "0x94efD64ebcE00f6966C195D870e16f6204AE9241",
-  "validator-wallet-creator": "0x8149Bf4Ad08D587Dff4B96ef1EAbBf1Ac49B3d6c",
-  "stake-token": "0xE408C55b2fb7fC72C1269Fcc5854e5Dc6e7a4Dd7"
+  "upgrade-executor": "0x4988EED20bF9b3826fB96334EB50c120dC26eEB2",
+  "validator-wallet-creator": "0x3cF6eF4eB7fFEc116216d761114ffe62c3370A2f",
+  "stake-token": "0x1D5EAC6a5334BE258F25B1BAcD4c542E1D1882bF"
 }
